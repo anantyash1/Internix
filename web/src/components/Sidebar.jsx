@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { Video } from 'lucide-react';
 import {
   LayoutDashboard,
   ListTodo,
@@ -19,6 +20,7 @@ const navItems = {
     { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
     { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
+    { to: '/videos', icon: Video, label: 'Videos' },
   ],
   mentor: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,6 +29,8 @@ const navItems = {
     { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
     { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/internships', icon: Briefcase, label: 'Internships' },
+    { to: '/certificates', icon: Award, label: 'Certificates' },
+    { to: '/videos', icon: Video, label: 'Videos' },
   ],
   student: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,6 +38,7 @@ const navItems = {
     { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
     { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
+    { to: '/videos', icon: Video, label: 'Learning' },
   ],
 };
 

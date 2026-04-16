@@ -6,7 +6,8 @@ import 'tasks_screen.dart';
 import 'attendance_screen.dart';
 import 'reports_screen.dart';
 import 'certificates_screen.dart';
-
+import 'videos_screen.dart';
+import 'ai_chat_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -28,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
       const AttendanceScreen(),
       const ReportsScreen(),
       if (role == 'student') const CertificatesScreen(),
+      const VideosScreen(),
+      const AiChatScreen(),
     ];
 
     final navItems = <BottomNavigationBarItem>[
@@ -51,6 +54,16 @@ class _HomeScreenState extends State<HomeScreen> {
         activeIcon: Icon(Icons.description),
         label: 'Reports',
       ),
+      const BottomNavigationBarItem(
+  icon: Icon(Icons.play_circle_outline),
+  activeIcon: Icon(Icons.play_circle),
+  label: 'Videos',
+),
+const BottomNavigationBarItem(
+  icon: Icon(Icons.smart_toy_outlined),
+  activeIcon: Icon(Icons.smart_toy),
+  label: 'AI Chat',
+),
       if (role == 'student')
         const BottomNavigationBarItem(
           icon: Icon(Icons.emoji_events_outlined),

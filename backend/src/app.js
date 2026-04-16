@@ -12,6 +12,9 @@ const certificateRoutes = require('./routes/certificate.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const internshipRoutes = require('./routes/internship.routes');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
+// Add these two requires at the top with other routes
+const videoRoutes = require('./routes/video.routes');
+const aiRoutes = require('./routes/ai.routes');
 
 const app = express();
 
@@ -30,8 +33,11 @@ if (process.env.NODE_ENV !== 'production') {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
-
+console.log("aiRoutes:", typeof aiRoutes);
 // Routes
+
+// Add in the routes section (after existing routes)
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -40,6 +46,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/internships', internshipRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Error handling
 app.use(notFound);

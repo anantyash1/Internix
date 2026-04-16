@@ -4,6 +4,8 @@ const Attendance = require('../models/Attendance');
 const Report = require('../models/Report');
 const Internship = require('../models/Internship');
 const Certificate = require('../models/Certificate');
+const Video = require('../models/Video');
+const VideoProgress = require('../models/VideoProgress');
 
 // GET /api/dashboard — Role-aware dashboard data
 const getDashboard = async (req, res, next) => {
@@ -32,6 +34,7 @@ async function getAdminDashboard(req, res) {
     recentUsers,
     attendanceStats,
   ] = await Promise.all([
+
     User.countDocuments({ role: 'student' }),
     User.countDocuments({ role: 'mentor' }),
     Internship.countDocuments(),
@@ -77,7 +80,8 @@ async function getMentorDashboard(req, res) {
     tasksByStatus,
     pendingReports,
     recentTasks,
-  ] = await Promise.all([
+   
+  ] = await Promise.all([ 
     User.countDocuments({ mentor: mentorId, role: 'student' }),
     Task.countDocuments({ assignedBy: mentorId }),
     Task.aggregate([
@@ -115,6 +119,8 @@ async function getStudentDashboard(req, res) {
     todayAttendance,
     totalAttendance,
     certificates,
+    completedVideoCount,
+    totalVideoCount
   ] = await Promise.all([
     Task.countDocuments({ assignedTo: studentId }),
     Task.countDocuments({ assignedTo: studentId, status: 'completed' }),
@@ -129,9 +135,24 @@ async function getStudentDashboard(req, res) {
     Certificate.find({ student: studentId })
       .populate('internship', 'title')
       .sort({ createdAt: -1 }),
+
+    // ✅ YOUR NEW VIDEO QUERIES (CORRECT POSITION)
+    VideoProgress.countDocuments({ student: studentId, completed: true }),
+    Video.countDocuments({
+      $or: [
+        { assignedTo: studentId },
+        { assignedTo: { $size: 0 } }
+      ]
+    })
   ]);
 
-  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const taskCompletionRate =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const videoProgressRate =
+    totalVideoCount > 0
+      ? Math.round((completedVideoCount / totalVideoCount) * 100)
+      : 0;
 
   res.json({
     stats: {
@@ -141,6 +162,11 @@ async function getStudentDashboard(req, res) {
       totalReports,
       approvedReports,
       totalAttendanceDays: totalAttendance,
+
+      // ✅ VIDEO STATS (NOW CORRECT)
+      completedVideos: completedVideoCount,
+      totalVideos: totalVideoCount,
+      videoProgressRate
     },
     tasksByStatus: tasksByStatus.reduce((acc, item) => {
       acc[item._id] = item.count;

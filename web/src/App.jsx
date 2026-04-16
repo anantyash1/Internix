@@ -10,6 +10,7 @@ import ReportsPage from './pages/ReportsPage';
 import UsersPage from './pages/UsersPage';
 import InternshipsPage from './pages/InternshipsPage';
 import CertificatesPage from './pages/CertificatesPage';
+import VideosPage from './pages/VideosPage';
 
 function ProtectedRoute({ children, roles }) {
   const user = useAuthStore((s) => s.user);
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
+        <Route path="videos" element={<VideosPage />} />
         <Route
           path="users"
           element={

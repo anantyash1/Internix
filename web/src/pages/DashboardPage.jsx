@@ -214,6 +214,26 @@ function StudentDashboard({ data }) {
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+  <span className="text-sm text-gray-600">Videos Completed</span>
+  <span className="text-sm font-semibold">
+    {stats.completedVideos || 0}/{stats.totalVideos || 0}
+  </span>
+</div>
+{(stats.totalVideos > 0) && (
+  <div className="card mt-4">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-sm font-semibold text-gray-700">Video Learning Progress</span>
+      <span className="text-sm font-bold text-green-600">{stats.videoProgressRate || 0}%</span>
+    </div>
+    <div className="w-full bg-gray-100 rounded-full h-2.5">
+      <div
+        className="bg-green-500 h-2.5 rounded-full transition-all"
+        style={{ width: `${stats.videoProgressRate || 0}%` }}
+      />
+    </div>
+  </div>
+)}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <span className="text-sm text-gray-600">Reports Submitted</span>
               <span className="text-sm font-semibold">{stats.totalReports}</span>
             </div>

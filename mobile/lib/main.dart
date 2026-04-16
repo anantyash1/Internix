@@ -10,6 +10,8 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'config/theme.dart';
+import 'providers/video_provider.dart';
+import 'providers/ai_provider.dart';
 
 void main() {
   runApp(const InternixApp());
@@ -28,6 +30,8 @@ class InternixApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(create: (_) => CertificateProvider()),
+        ChangeNotifierProvider(create: (_) => VideoProvider()),
+        ChangeNotifierProvider(create: (_) => AiProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
