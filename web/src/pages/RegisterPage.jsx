@@ -1,268 +1,231 @@
-// import { useState } from 'react';
-// import { Link, useNavigate } from 'react-router-dom';
-// import useAuthStore from '../store/authStore';
-// import toast from 'react-hot-toast';
-// import { UserPlus } from 'lucide-react';
-
-// export default function RegisterPage() {
-//   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student', phone: '' });
-//   const { register, loading } = useAuthStore();
-//   const navigate = useNavigate();
-
-//   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       await register(form);
-//       toast.success('Account created!');
-//       navigate('/dashboard');
-//     } catch (err) {
-//       toast.error(err.message);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 p-4">
-//       <div className="w-full max-w-md">
-//         <div className="text-center mb-8">
-//           <h1 className="text-4xl font-bold text-primary-700">Internix</h1>
-//           <p className="text-gray-500 mt-2">Create your account</p>
-//         </div>
-//         <div className="bg-white rounded-2xl shadow-lg p-8">
-//           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Register</h2>
-//           <form onSubmit={handleSubmit} className="space-y-4">
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-//               <input name="name" value={form.name} onChange={handleChange} className="input-field" required />
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-//               <input name="email" type="email" value={form.email} onChange={handleChange} className="input-field" required />
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-//               <input name="password" type="password" value={form.password} onChange={handleChange} className="input-field" minLength={6} required />
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-//               <select name="role" value={form.role} onChange={handleChange} className="input-field">
-//                 <option value="student">Student</option>
-//                 <option value="mentor">Mentor</option>
-//               </select>
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
-//               <input name="phone" value={form.phone} onChange={handleChange} className="input-field" />
-//             </div>
-//             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-//               <UserPlus size={18} />
-//               {loading ? 'Creating...' : 'Create Account'}
-//             </button>
-//           </form>
-//           <p className="text-center text-sm text-gray-500 mt-6">
-//             Already have an account?{' '}
-//             <Link to="/login" className="text-primary-600 font-medium hover:underline">
-//               Sign in
-//             </Link>
-//           </p>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
-import { UserPlus, Mail, KeyRound, User, Phone, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, User, Mail, Lock, Phone, ChevronDown } from 'lucide-react';
+
+const ROLES = [
+  { value: 'student', label: 'Student', desc: 'Access tasks, reports & certificates', emoji: '🎓' },
+  { value: 'mentor',  label: 'Mentor',  desc: 'Manage tasks and review student work', emoji: '👨‍🏫' },
+];
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'student',
-    phone: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student', phone: '' });
+  const [show, setShow] = useState(false);
+  const [focused, setFocused] = useState('');
   const { register, loading } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
     try {
       await register(form);
       toast.success('Account created!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Registration failed');
     }
   };
 
+  const fieldStyle = (key) => ({
+    boxShadow: focused === key ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
+  });
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f6dcb2,transparent_23%),radial-gradient(circle_at_bottom_right,#bfe9ff,transparent_24%),linear-gradient(160deg,#07111f,#18273a_40%,#23304a)] px-5 py-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        {/* Left side – info panel */}
-        <section className="rounded-[2.4rem] border border-white/10 bg-white/5 p-7 text-white shadow-2xl shadow-black/20 backdrop-blur">
-          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200">
-            <GraduationCap className="h-4 w-4" />
-            Smart Internship Management
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--slate-50)',
+      padding: '2rem 1rem',
+      fontFamily: 'var(--font-body)',
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 480,
+        animation: 'fadeUp 0.4s ease both',
+      }}>
+        {/* Logo row */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 13,
+            background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 0.75rem',
+            boxShadow: '0 4px 16px rgba(37,99,235,0.35)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>I</span>
           </div>
-          <h1 className="mt-6 max-w-xl text-4xl font-semibold tracking-tight md:text-5xl">
-            Manage internships, students, mentors, and evaluations in one place
-          </h1>
-          <p className="mt-5 max-w-2xl text-sm leading-8 text-slate-200/85 md:text-base">
-            The Smart Internship Management System helps universities and companies
-            track student applications, mentor assignments, project submissions,
-            and performance reviews – all powered by Spring Boot and JWT.
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              { label: 'Core Modules', value: 'Internships · Students · Mentors · Evaluations' },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[1.5rem] border border-white/10 bg-black/15 p-4"
-              >
-                <p className="text-xs uppercase tracking-[0.28em] text-white/45">
-                  {item.label}
-                </p>
-                <p className="mt-3 text-sm font-semibold text-white leading-tight">{item.value}</p>
-              </div>
-            ))}
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.5rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>
+            Create your account
           </div>
-        </section>
+          <div style={{ fontSize: '0.875rem', color: 'var(--slate-500)', marginTop: '0.25rem' }}>
+            Join Internix and start your internship journey
+          </div>
+        </div>
 
-        {/* Right side – registration form */}
-        <section className="rounded-[2.4rem] border border-white/10 bg-white px-6 py-7 shadow-2xl shadow-black/20 md:px-8">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              Join the platform
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Create account</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Sign up as a student or mentor to start your internship journey.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Full Name
-              </span>
-              <div className="relative">
-                <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  required
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                />
-              </div>
+        {/* Card */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--slate-200)',
+          boxShadow: 'var(--shadow-xl)',
+          padding: '2rem',
+        }}>
+          {/* Role selector */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.5rem' }}>
+              I am a…
             </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              {ROLES.map((r) => {
+                const active = form.role === r.value;
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, role: r.value }))}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                      gap: '0.25rem',
+                      padding: '0.875rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `1.5px solid ${active ? 'var(--blue-500)' : 'var(--slate-200)'}`,
+                      background: active ? 'var(--blue-50)' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 180ms ease',
+                      textAlign: 'left',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                    onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = 'var(--slate-300)'; e.currentTarget.style.background = 'var(--slate-50)'; } }}
+                    onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = 'var(--slate-200)'; e.currentTarget.style.background = '#ffffff'; } }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span style={{ fontSize: '1rem' }}>{r.emoji}</span>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: active ? 'var(--blue-700)' : 'var(--slate-800)' }}>
+                        {r.label}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: active ? 'var(--blue-500)' : 'var(--slate-400)', lineHeight: 1.4 }}>
+                      {r.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            {/* Name */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                Full name
+              </label>
+              <input
+                value={form.name} onChange={set('name')}
+                onFocus={() => setFocused('name')} onBlur={() => setFocused('')}
+                className="input-field" placeholder="Jane Doe" required
+                style={fieldStyle('name')}
+              />
+            </div>
 
             {/* Email */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Email
-              </span>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="you@university.edu"
-                  required
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                />
-              </div>
-            </label>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                Email address
+              </label>
+              <input
+                type="email" value={form.email} onChange={set('email')}
+                onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
+                className="input-field" placeholder="you@example.com" required
+                style={fieldStyle('email')}
+              />
+            </div>
 
             {/* Password */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
                 Password
-              </span>
-              <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              </label>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Min. 6 characters"
-                  minLength={6}
-                  required
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                  type={show ? 'text' : 'password'}
+                  value={form.password} onChange={set('password')}
+                  onFocus={() => setFocused('password')} onBlur={() => setFocused('')}
+                  className="input-field" placeholder="Min. 6 characters" required minLength={6}
+                  style={{ paddingRight: '2.5rem', ...fieldStyle('password') }}
                 />
-              </div>
-            </label>
-
-            {/* Role */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Role
-              </span>
-              <div className="relative">
-                <UserPlus className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <select
-                  name="role"
-                  value={form.role}
-                  onChange={handleChange}
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400 appearance-none"
+                <button type="button" onClick={() => setShow(!show)} style={{
+                  position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--slate-400)', padding: '0.25rem', transition: 'color 150ms',
+                  display: 'flex', alignItems: 'center',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--slate-700)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--slate-400)'}
                 >
-                  <option value="student">Student</option>
-                  <option value="mentor">Mentor</option>
-                </select>
+                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-            </label>
+              {/* Strength bar */}
+              {form.password && (
+                <div style={{ marginTop: '0.375rem' }}>
+                  <div style={{ height: 3, background: 'var(--slate-100)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 999,
+                      width: form.password.length >= 10 ? '100%' : form.password.length >= 6 ? '55%' : '25%',
+                      background: form.password.length >= 10 ? 'var(--emerald-500)' : form.password.length >= 6 ? 'var(--amber-400)' : 'var(--rose-400)',
+                      transition: 'all 250ms ease',
+                    }} />
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--slate-400)', marginTop: 3 }}>
+                    {form.password.length >= 10 ? '✓ Strong password' : form.password.length >= 6 ? 'Medium strength' : 'Weak'}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Phone (optional) */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Phone (optional)
-              </span>
-              <div className="relative">
-                <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="+1234567890"
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                />
-              </div>
-            </label>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                Phone <span style={{ fontWeight: 400, color: 'var(--slate-400)' }}>(optional)</span>
+              </label>
+              <input
+                type="tel" value={form.phone} onChange={set('phone')}
+                onFocus={() => setFocused('phone')} onBlur={() => setFocused('')}
+                className="input-field" placeholder="+91 98765 43210"
+                style={fieldStyle('phone')}
+              />
+            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-[1.2rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+            <button type="submit" disabled={loading} className="btn-primary"
+              style={{
+                justifyContent: 'center', padding: '0.6875rem',
+                fontSize: '0.9375rem', fontWeight: 600, marginTop: '0.25rem',
+                background: loading ? 'var(--slate-300)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              }}
             >
-              <UserPlus size={18} />
-              {loading ? 'Creating...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  Creating account…
+                </>
+              ) : (
+                <>Create account <ArrowRight size={16} /></>
+              )}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--slate-500)', marginTop: '1.25rem' }}>
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-slate-950 transition hover:text-sky-700">
+            <Link to="/login" style={{ color: 'var(--blue-600)', fontWeight: 600, textDecoration: 'none' }}
+              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>
               Sign in
             </Link>
           </p>
-        </section>
+        </div>
       </div>
     </div>
   );

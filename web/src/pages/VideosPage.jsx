@@ -1,29 +1,196 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useVideoStore from '../store/videoStore';
-import VideoPlayer from '../components/VideoPlayer';
-import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import Modal from '../components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Play, CheckCircle, Youtube, Upload } from 'lucide-react';
+import { Play, Plus, Trash2, CheckCircle, Youtube, Upload, RefreshCw, BookOpen } from 'lucide-react';
+
+function VideoThumbnail({ video }) {
+  return video.thumbnailUrl ? (
+    <img
+      src={video.thumbnailUrl}
+      alt={video.title}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      onError={(e) => { e.target.style.display = 'none'; }}
+    />
+  ) : (
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--slate-100)', color: 'var(--slate-300)' }}>
+      <Play size={28} />
+    </div>
+  );
+}
+
+function VideoListItem({ video, isSelected, onSelect, user, onComplete, onDelete }) {
+  const [hovered, setHovered] = useState(false);
+  const isCompleted = video?.progress?.completed;
+  const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
+
+  return (
+    <div
+      onClick={() => onSelect(video)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+        padding: '0.75rem',
+        borderRadius: 'var(--radius-md)',
+        border: `1.5px solid ${isSelected ? 'var(--blue-400)' : hovered ? 'var(--slate-300)' : 'var(--slate-200)'}`,
+        background: isSelected ? 'var(--blue-50)' : hovered ? 'var(--slate-50)' : '#ffffff',
+        cursor: 'pointer',
+        transition: 'all 180ms ease',
+        position: 'relative',
+      }}
+    >
+      {/* Thumbnail */}
+      <div style={{
+        width: 80, height: 52, borderRadius: 8, overflow: 'hidden',
+        flexShrink: 0, background: 'var(--slate-100', position: 'relative',
+      }}>
+        <VideoThumbnail video={video} />
+        {isCompleted && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(16,185,129,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <CheckCircle size={18} style={{ color: '#fff' }} />
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: '0.8125rem', fontWeight: 600,
+          color: isSelected ? 'var(--blue-700)' : 'var(--slate-900)',
+          lineHeight: 1.35, marginBottom: '0.25rem',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
+          {video.title}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+          {video.type === 'youtube'
+            ? <Youtube size={11} style={{ color: '#ef4444' }} />
+            : <Upload size={11} style={{ color: 'var(--blue-500)' }} />}
+          <span style={{ fontSize: '0.6875rem', color: 'var(--slate-400)' }}>
+            {video.type === 'youtube' ? 'YouTube' : 'Uploaded'}
+            {video.duration ? ` · ${video.duration}` : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Delete (mentor/admin) */}
+      {isMentorAdmin && hovered && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(video._id); }}
+          className="btn-icon danger"
+          style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26 }}
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function VideoPlayer({ video, user, onComplete }) {
+  const [completing, setCompleting] = useState(false);
+  const isCompleted = video?.progress?.completed;
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    await onComplete(video._id);
+    setCompleting(false);
+  };
+
+  return (
+    <div>
+      {/* Player */}
+      <div style={{
+        borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+        background: '#000', aspectRatio: '16/9', marginBottom: '1rem',
+        boxShadow: 'var(--shadow-lg)',
+      }}>
+        {video.type === 'youtube' ? (
+          <iframe
+            src={`${video.url}?rel=0&modestbranding=1`}
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={video.title}
+          />
+        ) : (
+          <video src={video.url} controls style={{ width: '100%', height: '100%', display: 'block' }} />
+        )}
+      </div>
+
+      {/* Info bar */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.0625rem', color: 'var(--slate-900)', letterSpacing: '-0.025em', marginBottom: '0.25rem' }}>
+            {video.title}
+          </h3>
+          {video.description && (
+            <p style={{ fontSize: '0.8125rem', color: 'var(--slate-500)', lineHeight: 1.6, marginBottom: '0.375rem' }}>
+              {video.description}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {video.type === 'youtube'
+              ? <span className="badge badge-red"><Youtube size={10} /> YouTube</span>
+              : <span className="badge badge-blue"><Upload size={10} /> Uploaded</span>}
+            {video.duration && <span className="badge badge-gray">{video.duration}</span>}
+            <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>by {video.createdBy?.name}</span>
+          </div>
+        </div>
+
+        {user?.role === 'student' && (
+          <button
+            onClick={handleComplete}
+            disabled={isCompleted || completing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.4375rem',
+              padding: '0.5625rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              border: `1.5px solid ${isCompleted ? 'rgba(16,185,129,0.3)' : 'transparent'}`,
+              background: isCompleted ? 'var(--emerald-50)' : 'var(--emerald-500)',
+              color: isCompleted ? 'var(--emerald-600)' : '#ffffff',
+              fontSize: '0.875rem', fontWeight: 600, flexShrink: 0,
+              cursor: isCompleted ? 'default' : 'pointer',
+              fontFamily: 'var(--font-body)',
+              transition: 'all 200ms cubic-bezier(0.34,1.56,0.64,1)',
+              transform: !isCompleted && !completing ? 'scale(1)' : '',
+              boxShadow: !isCompleted ? '0 4px 12px rgba(16,185,129,0.3)' : 'none',
+            }}
+            onMouseEnter={(e) => { if (!isCompleted && !completing) e.currentTarget.style.transform = 'scale(1.03)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
+          >
+            {completing ? <RefreshCw size={15} style={{ animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle size={15} />}
+            {isCompleted ? 'Completed' : completing ? 'Saving…' : 'Mark complete'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function VideosPage() {
   const user = useAuthStore((s) => s.user);
-  const { videos, loading, fetchVideos, createVideoLink, uploadVideo, deleteVideo } = useVideoStore();
-
-  const [showModal, setShowModal] = useState(false);
-  const [addType, setAddType] = useState('youtube'); // 'youtube' | 'upload'
-  const [selectedVideo, setSelectedVideo] = useState(null);
-  const [form, setForm] = useState({ title: '', description: '', url: '', duration: '' });
+  const { videos, loading, fetchVideos, createVideoLink, uploadVideo, deleteVideo, markComplete } = useVideoStore();
+  const [selected,  setSelected]  = useState(null);
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [addType,   setAddType]   = useState('youtube');
+  const [form, setForm]           = useState({ title: '', description: '', url: '', duration: '' });
   const [fileInput, setFileInput] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
 
-  useEffect(() => {
-    fetchVideos();
-  }, []);
+  useEffect(() => { fetchVideos(); }, []);
+  useEffect(() => { if (videos.length > 0 && !selected) setSelected(videos[0]); }, [videos]);
 
   const completedCount = videos.filter((v) => v.progress?.completed).length;
-  const progressPct = videos.length > 0 ? Math.round((completedCount / videos.length) * 100) : 0;
+  const progressPct    = videos.length > 0 ? Math.round((completedCount / videos.length) * 100) : 0;
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -33,7 +200,7 @@ export default function VideosPage() {
         await createVideoLink(form);
         toast.success('Video added!');
       } else {
-        if (!fileInput) return toast.error('Select a video file');
+        if (!fileInput) { toast.error('Select a file'); setSaving(false); return; }
         const fd = new FormData();
         fd.append('title', form.title);
         fd.append('description', form.description);
@@ -41,12 +208,10 @@ export default function VideosPage() {
         await uploadVideo(fd);
         toast.success('Video uploaded!');
       }
-      setShowModal(false);
+      setShowAdd(false);
       setForm({ title: '', description: '', url: '', duration: '' });
       setFileInput(null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed');
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
     setSaving(false);
   };
 
@@ -55,213 +220,158 @@ export default function VideosPage() {
     try {
       await deleteVideo(id);
       toast.success('Deleted');
-      if (selectedVideo?._id === id) setSelectedVideo(null);
-    } catch {
-      toast.error('Failed to delete');
-    }
+      if (selected?._id === id) setSelected(videos.find((v) => v._id !== id) || null);
+    } catch { toast.error('Failed to delete'); }
   };
 
-  if (loading) return <LoadingSpinner />;
+  const handleComplete = async (videoId) => {
+    await markComplete(videoId);
+    toast.success('🎉 Marked as completed!');
+    setSelected((s) => s?._id === videoId ? { ...s, progress: { completed: true } } : s);
+  };
 
-  const isMentorOrAdmin = user?.role === 'mentor' || user?.role === 'admin';
+  if (loading) return <LoadingSpinner label="Loading videos…" />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Learning Videos</h1>
-          {user?.role === 'student' && videos.length > 0 && (
-            <p className="text-sm text-gray-500 mt-1">
-              {completedCount}/{videos.length} completed
-            </p>
-          )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Header */}
+      <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--rose-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(244,63,94,0.15)' }}>
+            <BookOpen size={19} style={{ color: 'var(--rose-500)' }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>Learning Videos</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--slate-500)' }}>{videos.length} videos{user?.role === 'student' ? ` · ${completedCount} completed` : ''}</div>
+          </div>
         </div>
-        {isMentorOrAdmin && (
-          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={18} /> Add Video
+        {isMentorAdmin && (
+          <button onClick={() => setShowAdd(true)} className="btn-primary">
+            <Plus size={15} /> Add Video
           </button>
         )}
       </div>
 
       {/* Progress bar for students */}
       {user?.role === 'student' && videos.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Your video progress</span>
-            <span className="text-sm font-bold text-primary-600">{progressPct}%</span>
+        <div className="card animate-fade-up stagger-1" style={{ padding: '1rem 1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--slate-700)' }}>Learning progress</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--blue-600)' }}>{progressPct}%</span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-3">
-            <div
-              className="bg-primary-500 h-3 rounded-full transition-all duration-700"
-              style={{ width: `${progressPct}%` }}
-            />
+          <div className="progress-bar">
+            <div className="progress-bar-fill" style={{ width: `${progressPct}%` }} />
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginTop: '0.375rem' }}>
             {completedCount} of {videos.length} videos completed
-          </p>
+          </div>
         </div>
       )}
 
       {/* Main layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Video list */}
-        <div className="lg:col-span-1 space-y-3">
-          {videos.length === 0 && (
-            <div className="card text-center py-10 text-gray-400">
-              <Play size={32} className="mx-auto mb-2 opacity-30" />
-              No videos yet
-            </div>
-          )}
-          {videos.map((video) => (
-            <div
-              key={video._id}
-              onClick={() => setSelectedVideo(video)}
-              className={`card cursor-pointer transition-all hover:shadow-md ${
-                selectedVideo?._id === video._id ? 'ring-2 ring-primary-400' : ''
-              }`}
-            >
-              {/* Thumbnail */}
-              <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video mb-3">
-                {video.thumbnailUrl ? (
-                  <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Play size={28} className="text-gray-300" />
-                  </div>
-                )}
-                {video.progress?.completed && (
-                  <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5">
-                    <CheckCircle size={14} />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/30 transition-opacity">
-                  <Play size={28} className="text-white" />
-                </div>
-              </div>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm truncate">{video.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {video.type === 'youtube' ? (
-                      <Youtube size={12} className="text-red-500" />
-                    ) : (
-                      <Upload size={12} className="text-blue-500" />
-                    )}
-                    <span className="text-xs text-gray-400 capitalize">{video.type}</span>
-                    {video.duration && <span className="text-xs text-gray-400">{video.duration}</span>}
-                  </div>
-                </div>
-                {isMentorOrAdmin && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(video._id); }}
-                    className="text-red-400 hover:bg-red-50 p-1 rounded"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      {videos.length === 0 ? (
+        <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+            <Play size={28} style={{ color: 'var(--slate-300)' }} />
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-600)', marginBottom: '0.375rem' }}>No videos yet</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>{isMentorAdmin ? 'Add YouTube links or upload video files.' : 'Your mentor will add learning materials here.'}</div>
         </div>
-
-        {/* Player panel */}
-        <div className="lg:col-span-2">
-          {selectedVideo ? (
-            <div className="card">
-              <VideoPlayer
-                video={selectedVideo}
-                canMark={user?.role === 'student' && !selectedVideo.progress?.completed}
-              />
-            </div>
-          ) : (
-            <div className="card flex flex-col items-center justify-center py-20 text-gray-300">
-              <Play size={48} className="mb-3" />
-              <p className="text-sm">Select a video to watch</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Add Video Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Video">
-        <div className="space-y-4">
-          {/* Type tabs */}
-          <div className="flex gap-2 bg-gray-50 p-1 rounded-lg">
-            <button
-              onClick={() => setAddType('youtube')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                addType === 'youtube' ? 'bg-white shadow text-red-600' : 'text-gray-500'
-              }`}
-            >
-              <Youtube size={16} /> YouTube Link
-            </button>
-            <button
-              onClick={() => setAddType('upload')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                addType === 'upload' ? 'bg-white shadow text-blue-600' : 'text-gray-500'
-              }`}
-            >
-              <Upload size={16} /> Upload File
-            </button>
+      ) : (
+        <div className="animate-fade-up stagger-2" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.25rem', alignItems: 'flex-start' }}>
+          {/* Player */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            {selected
+              ? <VideoPlayer video={selected} user={user} onComplete={handleComplete} />
+              : <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)', color: 'var(--slate-300)' }}>
+                  <Play size={40} />
+                </div>
+            }
           </div>
 
-          <form onSubmit={handleSave} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="input-field"
-                required
+          {/* Sidebar list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: '0.25rem', padding: '0 0.125rem' }}>
+              Playlist · {videos.length}
+            </div>
+            {videos.map((v) => (
+              <VideoListItem
+                key={v._id}
+                video={v}
+                isSelected={selected?._id === v._id}
+                onSelect={setSelected}
+                user={user}
+                onComplete={handleComplete}
+                onDelete={handleDelete}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add video modal */}
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add video">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Type toggle */}
+          <div style={{ display: 'flex', background: 'var(--slate-100)', borderRadius: 10, padding: '0.25rem', gap: '0.25rem' }}>
+            {[
+              { key: 'youtube', label: 'YouTube link', icon: <Youtube size={14} style={{ color: '#ef4444' }} /> },
+              { key: 'upload',  label: 'Upload file',  icon: <Upload size={14} style={{ color: 'var(--blue-500)' }} /> },
+            ].map(({ key, label, icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setAddType(key)}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                  padding: '0.5rem', borderRadius: 8, border: 'none',
+                  background: addType === key ? '#ffffff' : 'transparent',
+                  color: addType === key ? 'var(--slate-900)' : 'var(--slate-500)',
+                  fontSize: '0.8125rem', fontWeight: addType === key ? 600 : 400,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  boxShadow: addType === key ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 150ms',
+                }}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Title</label>
+              <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className="input-field" placeholder="Video title…" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="input-field"
-                rows={2}
-              />
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                Description <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="input-field" rows={2} placeholder="Brief description…" />
             </div>
             {addType === 'youtube' ? (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">YouTube URL</label>
-                  <input
-                    value={form.url}
-                    onChange={(e) => setForm({ ...form, url: e.target.value })}
-                    className="input-field"
-                    placeholder="https://youtube.com/watch?v=..."
-                    required
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>YouTube URL</label>
+                  <input value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} className="input-field" placeholder="https://youtube.com/watch?v=…" required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (optional)</label>
-                  <input
-                    value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                    className="input-field"
-                    placeholder="e.g. 12:34"
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                    Duration <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
+                  </label>
+                  <input value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: e.target.value }))} className="input-field" placeholder="e.g. 12:34" />
                 </div>
               </>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video File (MP4, MOV — max 200MB)
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                  Video file <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(MP4, MOV · max 200MB)</span>
                 </label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setFileInput(e.target.files[0])}
-                  className="input-field"
-                  required
-                />
+                <input type="file" accept="video/*" onChange={(e) => setFileInput(e.target.files[0])} className="input-field" required />
               </div>
             )}
-            <button type="submit" disabled={saving} className="btn-primary w-full">
-              {saving ? 'Saving...' : 'Add Video'}
+            <button type="submit" disabled={saving} className="btn-primary" style={{ justifyContent: 'center', padding: '0.625rem', marginTop: '0.125rem' }}>
+              {saving ? <><RefreshCw size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Saving…</> : <><Plus size={15} /> Add video</>}
             </button>
           </form>
         </div>

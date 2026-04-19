@@ -4,250 +4,386 @@ import useDashboardStore from '../store/dashboardStore';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatCard from '../components/ui/StatCard';
 import {
-  Users, ListTodo, FileText, Briefcase, Award, CalendarCheck, CheckCircle, TrendingUp,
+  Users, ListTodo, FileText, Briefcase, Award, CalendarCheck,
+  CheckCircle, TrendingUp, Clock, Star, Activity,
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
+/* ── Tooltip ── */
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid var(--slate-200)',
+      borderRadius: 'var(--radius-md)', padding: '0.625rem 0.875rem',
+      boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-body)',
+    }}>
+      {label && <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginBottom: 4 }}>{label}</div>}
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.fill || p.color }} />
+          <span style={{ fontWeight: 600, color: 'var(--slate-900)' }}>{p.value}</span>
+          <span style={{ color: 'var(--slate-500)', textTransform: 'capitalize' }}>{p.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-export default function DashboardPage() {
-  const user = useAuthStore((s) => s.user);
-  const { data, loading, fetchDashboard } = useDashboardStore();
+const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e'];
 
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
-
-  if (loading || !data) return <LoadingSpinner />;
-
-  if (user?.role === 'admin') return <AdminDashboard data={data} />;
-  if (user?.role === 'mentor') return <MentorDashboard data={data} />;
-  return <StudentDashboard data={data} />;
+/* ── Section wrapper ── */
+function Section({ title, action, children, delay = 0 }) {
+  return (
+    <div className="animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
+      {(title || action) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          {title && (
+            <h2 style={{
+              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem',
+              color: 'var(--slate-900)', letterSpacing: '-0.02em', margin: 0,
+            }}>
+              {title}
+            </h2>
+          )}
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
 }
 
+/* ── Empty state ── */
+function Empty({ icon: Icon, label }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', gap: '0.75rem', color: 'var(--slate-300)' }}>
+      <Icon size={36} />
+      <span style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>{label}</span>
+    </div>
+  );
+}
+
+/* ─────────────────────── Admin ─────────────────────── */
 function AdminDashboard({ data }) {
-  const { stats, tasksByStatus, attendanceStats } = data;
+  const { stats = {}, tasksByStatus = {}, attendanceStats = {}, recentUsers = [] } = data;
 
-  const taskChartData = Object.entries(tasksByStatus || {}).map(([name, value]) => ({
-    name: name.replace('_', ' '),
-    value,
+  const taskData = Object.entries(tasksByStatus).map(([k, v]) => ({
+    name: k.replace('_', ' '),
+    value: v,
+    fill: k === 'completed' ? '#10b981' : k === 'in_progress' ? '#3b82f6' : k === 'reviewed' ? '#8b5cf6' : '#94a3b8',
   }));
 
-  const attendanceChartData = Object.entries(attendanceStats || {}).map(([name, value]) => ({
-    name,
-    value,
+  const attendData = Object.entries(attendanceStats).map(([k, v]) => ({
+    name: k, value: v,
+    fill: k === 'present' ? '#10b981' : k === 'late' ? '#f59e0b' : '#f43f5e',
   }));
+
+  const roleColors = { admin: '#8b5cf6', mentor: '#f59e0b', student: '#3b82f6' };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard title="Total Students" value={stats.totalStudents} icon={Users} color="primary" />
-        <StatCard title="Total Mentors" value={stats.totalMentors} icon={Users} color="purple" />
-        <StatCard title="Internships" value={stats.totalInternships} icon={Briefcase} color="green" />
-        <StatCard title="Tasks" value={stats.totalTasks} icon={ListTodo} color="orange" />
-        <StatCard title="Reports" value={stats.totalReports} icon={FileText} color="blue" />
-        <StatCard title="Certificates" value={stats.totalCertificates} icon={Award} color="red" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Tasks by Status</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={taskChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      {/* Stats grid */}
+      <Section delay={0}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+          <StatCard title="Total Students"  value={stats.totalStudents  ?? 0} icon={Users}     color="primary" />
+          <StatCard title="Total Mentors"   value={stats.totalMentors   ?? 0} icon={Users}     color="violet" />
+          <StatCard title="Internships"     value={stats.totalInternships ?? 0} icon={Briefcase} color="green" />
+          <StatCard title="Tasks Created"   value={stats.totalTasks     ?? 0} icon={ListTodo}  color="amber" />
+          <StatCard title="Reports Filed"   value={stats.totalReports   ?? 0} icon={FileText}  color="blue" />
+          <StatCard title="Certificates"    value={stats.totalCertificates ?? 0} icon={Award}  color="rose" />
         </div>
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Attendance Overview</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={attendanceChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                {attendanceChartData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      </Section>
 
-      {data.recentUsers?.length > 0 && (
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Recent Users</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+      {/* Charts row */}
+      <Section delay={80}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Tasks pie */}
+          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
+              Task distribution
+            </div>
+            {taskData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={taskData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                    innerRadius={55} outerRadius={88} paddingAngle={3} cornerRadius={4}>
+                    {taskData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.75rem', paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <Empty icon={ListTodo} label="No task data yet" />}
+          </div>
+
+          {/* Attendance pie */}
+          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
+              Attendance overview
+            </div>
+            {attendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={attendData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                    innerRadius={55} outerRadius={88} paddingAngle={3} cornerRadius={4}>
+                    {attendData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.75rem', paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <Empty icon={CalendarCheck} label="No attendance data yet" />}
+          </div>
+        </div>
+      </Section>
+
+      {/* Recent users table */}
+      {recentUsers.length > 0 && (
+        <Section title="Recently joined" delay={160}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table className="data-table">
               <thead>
-                <tr className="border-b text-left text-gray-500">
-                  <th className="pb-3 font-medium">Name</th>
-                  <th className="pb-3 font-medium">Email</th>
-                  <th className="pb-3 font-medium">Role</th>
-                  <th className="pb-3 font-medium">Joined</th>
+                <tr>
+                  <th style={{ padding: '0.875rem 1.25rem 0.75rem' }}>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Joined</th>
                 </tr>
               </thead>
               <tbody>
-                {data.recentUsers.map((u) => (
-                  <tr key={u._id} className="border-b last:border-0">
-                    <td className="py-3 font-medium text-gray-900">{u.name}</td>
-                    <td className="py-3 text-gray-500">{u.email}</td>
-                    <td className="py-3">
-                      <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100">{u.role}</span>
+                {recentUsers.map((u, i) => (
+                  <tr key={u._id} style={{ animationDelay: `${i * 40}ms` }}>
+                    <td style={{ padding: '0.875rem 1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                        <div style={{
+                          width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                          background: `linear-gradient(135deg, ${roleColors[u.role] || '#94a3b8'}40, ${roleColors[u.role] || '#94a3b8'}20)`,
+                          border: `1.5px solid ${roleColors[u.role] || '#94a3b8'}30`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'var(--font-display)', fontWeight: 700,
+                          fontSize: '0.6875rem', color: roleColors[u.role] || '#94a3b8',
+                        }}>
+                          {u.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ fontWeight: 500, color: 'var(--slate-900)' }}>{u.name}</span>
+                      </div>
                     </td>
-                    <td className="py-3 text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td>{u.email}</td>
+                    <td>
+                      <span className={`badge badge-${u.role === 'admin' ? 'violet' : u.role === 'mentor' ? 'amber' : 'blue'}`}
+                        style={{ textTransform: 'capitalize' }}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--slate-400)' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Section>
       )}
     </div>
   );
 }
 
+/* ─────────────────────── Mentor ─────────────────────── */
 function MentorDashboard({ data }) {
-  const { stats, tasksByStatus, recentTasks } = data;
+  const { stats = {}, tasksByStatus = {}, recentTasks = [] } = data;
 
-  const taskChartData = Object.entries(tasksByStatus || {}).map(([name, value]) => ({
-    name: name.replace('_', ' '),
-    value,
+  const taskChartData = Object.entries(tasksByStatus).map(([k, v]) => ({
+    name: k.replace('_', ' '), count: v,
   }));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Mentor Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="My Students" value={stats.myStudents} icon={Users} color="primary" />
-        <StatCard title="Tasks Created" value={stats.totalTasks} icon={ListTodo} color="green" />
-        <StatCard title="Pending Reports" value={stats.pendingReports} icon={FileText} color="orange" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Tasks by Status</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={taskChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#10b981" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      <Section delay={0}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+          <StatCard title="My Students"     value={stats.myStudents    ?? 0} icon={Users}    color="primary" />
+          <StatCard title="Tasks Created"   value={stats.totalTasks    ?? 0} icon={ListTodo} color="green" />
+          <StatCard title="Pending Reviews" value={stats.pendingReports ?? 0} icon={FileText} color="amber" />
         </div>
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Recent Tasks</h3>
-          <div className="space-y-3">
-            {(recentTasks || []).map((t) => (
-              <div key={t._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">{t.title}</p>
-                  <p className="text-xs text-gray-400">{t.assignedTo?.name}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  t.status === 'completed' ? 'bg-green-100 text-green-700' :
-                  t.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {t.status.replace('_', ' ')}
-                </span>
+      </Section>
+
+      <Section delay={60}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1rem' }}>
+          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
+              Tasks by status
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={taskChartData} barSize={28}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-100)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--slate-400)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--slate-400)' }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="count" fill="var(--blue-500)" radius={[5, 5, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
+              Recent tasks
+            </div>
+            {recentTasks.length === 0
+              ? <Empty icon={ListTodo} label="No tasks yet" />
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {recentTasks.slice(0, 5).map((t) => (
+                  <div key={t._id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0.625rem 0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--slate-100)',
+                    transition: 'background 150ms',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--slate-50)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = ''}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-900)' }}>{t.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>{t.assignedTo?.name}</div>
+                    </div>
+                    <span className={`badge badge-${
+                      t.status === 'completed' ? 'green'
+                      : t.status === 'in_progress' ? 'blue'
+                      : t.status === 'reviewed' ? 'violet' : 'gray'
+                    }`} style={{ textTransform: 'capitalize' }}>
+                      {t.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            }
           </div>
         </div>
-      </div>
+      </Section>
     </div>
   );
 }
 
+/* ─────────────────────── Student ─────────────────────── */
 function StudentDashboard({ data }) {
-  const { stats, tasksByStatus, todayAttendance, certificates } = data;
+  const { stats = {}, tasksByStatus = {}, todayAttendance, certificates = [] } = data;
 
-  const taskChartData = Object.entries(tasksByStatus || {}).map(([name, value]) => ({
-    name: name.replace('_', ' '),
-    value,
+  const taskData = Object.entries(tasksByStatus).map(([k, v]) => ({
+    name: k.replace('_', ' '), value: v,
+    fill: k === 'completed' ? '#10b981' : k === 'in_progress' ? '#3b82f6' : k === 'reviewed' ? '#8b5cf6' : '#94a3b8',
   }));
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Tasks" value={stats.totalTasks} icon={ListTodo} color="primary" />
-        <StatCard title="Completed" value={stats.completedTasks} icon={CheckCircle} color="green" />
-        <StatCard title="Completion Rate" value={`${stats.taskCompletionRate}%`} icon={TrendingUp} color="purple" />
-        <StatCard title="Attendance Days" value={stats.totalAttendanceDays} icon={CalendarCheck} color="orange" />
-      </div>
+  const videoRate   = stats.videoProgressRate   ?? 0;
+  const taskRate    = stats.taskCompletionRate  ?? 0;
+  const attendDays  = stats.totalAttendanceDays ?? 0;
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Task Progress</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={taskChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                {taskChartData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      {/* Stats */}
+      <Section delay={0}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+          <StatCard title="Total Tasks"     value={stats.totalTasks    ?? 0} icon={ListTodo}    color="primary" />
+          <StatCard title="Completed"       value={stats.completedTasks ?? 0} icon={CheckCircle} color="green" />
+          <StatCard title="Task Completion" value={`${taskRate}%`}             icon={TrendingUp}  color="violet" />
+          <StatCard title="Attendance Days" value={attendDays}                 icon={CalendarCheck} color="amber" />
         </div>
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Quick Info</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Today's Attendance</span>
-              <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                todayAttendance === 'present' ? 'bg-green-100 text-green-700' :
-                todayAttendance === 'late' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                {todayAttendance || 'Not marked'}
-              </span>
+      </Section>
+
+      {/* Progress bars + today */}
+      <Section delay={80}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Progress card */}
+          <div className="card" style={{ padding: '1.375rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1.25rem' }}>
+              My progress
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-  <span className="text-sm text-gray-600">Videos Completed</span>
-  <span className="text-sm font-semibold">
-    {stats.completedVideos || 0}/{stats.totalVideos || 0}
-  </span>
-</div>
-{(stats.totalVideos > 0) && (
-  <div className="card mt-4">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-sm font-semibold text-gray-700">Video Learning Progress</span>
-      <span className="text-sm font-bold text-green-600">{stats.videoProgressRate || 0}%</span>
-    </div>
-    <div className="w-full bg-gray-100 rounded-full h-2.5">
-      <div
-        className="bg-green-500 h-2.5 rounded-full transition-all"
-        style={{ width: `${stats.videoProgressRate || 0}%` }}
-      />
-    </div>
-  </div>
-)}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Reports Submitted</span>
-              <span className="text-sm font-semibold">{stats.totalReports}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {[
+                { label: 'Task completion', value: taskRate, color: '#3b82f6', icon: <ListTodo size={13} /> },
+                { label: 'Video learning', value: videoRate, color: '#10b981', icon: <Activity size={13} /> },
+              ].map((p) => (
+                <div key={p.label}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: 'var(--slate-600)', fontWeight: 500 }}>
+                      {p.icon} {p.label}
+                    </div>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: p.color }}>{p.value}%</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-bar-fill" style={{ width: `${p.value}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}bb)` }} />
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Reports Approved</span>
-              <span className="text-sm font-semibold text-green-600">{stats.approvedReports}</span>
+          </div>
+
+          {/* Quick status */}
+          <div className="card" style={{ padding: '1.375rem 1.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1.25rem' }}>
+              At a glance
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Certificates Earned</span>
-              <span className="text-sm font-semibold text-primary-600">{certificates?.length || 0}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                {
+                  label: "Today's attendance",
+                  value: todayAttendance ? (
+                    <span className={`badge badge-${todayAttendance === 'present' ? 'green' : todayAttendance === 'late' ? 'amber' : 'red'}`}
+                      style={{ textTransform: 'capitalize' }}>{todayAttendance}</span>
+                  ) : <span className="badge badge-gray">Not marked</span>,
+                },
+                { label: 'Reports submitted', value: <strong>{stats.totalReports ?? 0}</strong> },
+                { label: 'Reports approved',  value: <strong style={{ color: 'var(--emerald-500)' }}>{stats.approvedReports ?? 0}</strong> },
+                { label: 'Certificates earned', value: <strong style={{ color: 'var(--amber-500)' }}>{certificates.length}</strong> },
+              ].map((row) => (
+                <div key={row.label} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '0.625rem 0',
+                  borderBottom: '1px solid var(--slate-100)',
+                  fontSize: '0.8125rem',
+                }}>
+                  <span style={{ color: 'var(--slate-500)' }}>{row.label}</span>
+                  {row.value}
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </Section>
+
+      {/* Task breakdown */}
+      {taskData.length > 0 && (
+        <Section title="Task breakdown" delay={160}>
+          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={taskData} barSize={32}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-100)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--slate-400)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--slate-400)' }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="value" radius={[5, 5, 0, 0]}>
+                  {taskData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Section>
+      )}
     </div>
   );
+}
+
+/* ─────────────────────── Root ─────────────────────── */
+export default function DashboardPage() {
+  const user  = useAuthStore((s) => s.user);
+  const { data, loading, fetchDashboard } = useDashboardStore();
+
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+
+  if (loading || !data) return <LoadingSpinner label="Loading dashboard…" />;
+
+  if (user?.role === 'admin')  return <AdminDashboard  data={data} />;
+  if (user?.role === 'mentor') return <MentorDashboard data={data} />;
+  return <StudentDashboard data={data} />;
 }

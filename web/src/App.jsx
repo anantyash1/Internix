@@ -11,6 +11,7 @@ import UsersPage from './pages/UsersPage';
 import InternshipsPage from './pages/InternshipsPage';
 import CertificatesPage from './pages/CertificatesPage';
 import VideosPage from './pages/VideosPage';
+import MentorSummaryPage from "./pages/MntorSummaryPage";
 
 function ProtectedRoute({ children, roles }) {
   const user = useAuthStore((s) => s.user);
@@ -24,33 +25,32 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/login"    element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
       <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <RegisterPage />} />
 
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="tasks" element={<TasksPage />} />
-        <Route path="attendance" element={<AttendancePage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route path="dashboard"    element={<DashboardPage />} />
+        <Route path="tasks"        element={<TasksPage />} />
+        <Route path="attendance"   element={<AttendancePage />} />
+        <Route path="reports"      element={<ReportsPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
-        <Route path="videos" element={<VideosPage />} />
-        <Route
-          path="users"
-          element={
-            <ProtectedRoute roles={['admin', 'mentor']}>
-              <UsersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="internships"
-          element={
-            <ProtectedRoute roles={['admin', 'mentor']}>
-              <InternshipsPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="videos"       element={<VideosPage />} />
+        <Route path="ai-summary"   element={
+          <ProtectedRoute roles={['admin', 'mentor']}>
+            <MentorSummaryPage />
+          </ProtectedRoute>
+        } />
+        <Route path="users" element={
+          <ProtectedRoute roles={['admin', 'mentor']}>
+            <UsersPage />
+          </ProtectedRoute>
+        } />
+        <Route path="internships" element={
+          <ProtectedRoute roles={['admin', 'mentor']}>
+            <InternshipsPage />
+          </ProtectedRoute>
+        } />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

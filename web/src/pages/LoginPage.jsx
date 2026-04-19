@@ -1,97 +1,21 @@
-// import { useState } from 'react';
-// import { Link, useNavigate } from 'react-router-dom';
-// import useAuthStore from '../store/authStore';
-// import toast from 'react-hot-toast';
-// import { LogIn, Eye, EyeOff } from 'lucide-react';
-
-// export default function LoginPage() {
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [showPass, setShowPass] = useState(false);
-//   const { login, loading } = useAuthStore();
-//   const navigate = useNavigate();
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       await login(email, password);
-//       toast.success('Welcome back!');
-//       navigate('/dashboard');
-//     } catch (err) {
-//       toast.error(err.message);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 p-4">
-//       <div className="w-full max-w-md">
-//         <div className="text-center mb-8">
-//           <h1 className="text-4xl font-bold text-primary-700">Internix</h1>
-//           <p className="text-gray-500 mt-2">Smart Internship Management</p>
-//         </div>
-//         <div className="bg-white rounded-2xl shadow-lg p-8">
-//           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Sign in</h2>
-//           <form onSubmit={handleSubmit} className="space-y-5">
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-//               <input
-//                 type="email"
-//                 value={email}
-//                 onChange={(e) => setEmail(e.target.value)}
-//                 className="input-field"
-//                 placeholder="you@example.com"
-//                 required
-//               />
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-//               <div className="relative">
-//                 <input
-//                   type={showPass ? 'text' : 'password'}
-//                   value={password}
-//                   onChange={(e) => setPassword(e.target.value)}
-//                   className="input-field pr-10"
-//                   placeholder="Enter your password"
-//                   required
-//                 />
-//                 <button
-//                   type="button"
-//                   onClick={() => setShowPass(!showPass)}
-//                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-//                 >
-//                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-//                 </button>
-//               </div>
-//             </div>
-//             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-//               <LogIn size={18} />
-//               {loading ? 'Signing in...' : 'Sign in'}
-//             </button>
-//           </form>
-//           <p className="text-center text-sm text-gray-500 mt-6">
-//             Don't have an account?{' '}
-//             <Link to="/register" className="text-primary-600 font-medium hover:underline">
-//               Register
-//             </Link>
-//           </p>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
-import { LogIn, Mail, KeyRound, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
+
+const FEATURES = [
+  { icon: '📋', label: 'Task tracking'   },
+  { icon: '📊', label: 'Live analytics'  },
+  { icon: '🎓', label: 'Certificates'    },
+  { icon: '🤖', label: 'AI insights'     },
+];
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
+  const [show,     setShow]     = useState(false);
+  const [focused,  setFocused]  = useState('');
   const { login, loading } = useAuthStore();
   const navigate = useNavigate();
 
@@ -102,122 +26,229 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Login failed');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f6dcb2,transparent_23%),radial-gradient(circle_at_bottom_right,#bfe9ff,transparent_24%),linear-gradient(160deg,#07111f,#18273a_40%,#23304a)] px-5 py-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        {/* Left side – info panel (glassmorphic) */}
-        <section className="rounded-[2.4rem] border border-white/10 bg-white/5 p-7 text-white shadow-2xl shadow-black/20 backdrop-blur">
-          <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200">
-            <ShieldCheck className="h-4 w-4" />
-            Secure JWT Authentication
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      background: 'var(--navy-950)',
+      fontFamily: 'var(--font-body)',
+    }}>
+      {/* ── Left panel ── */}
+      <div style={{
+        flex: '0 0 480px',
+        background: 'linear-gradient(160deg, var(--navy-800) 0%, var(--navy-900) 60%, var(--navy-950) 100%)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: '3rem',
+        position: 'relative', overflow: 'hidden',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        {/* Ambient orbs */}
+        <div style={{ position: 'absolute', top: -80, left: -80, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <div style={{ animation: 'slideInLeft 0.5s ease both' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem' }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12,
+              background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+            }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff' }}>I</span>
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.25rem', color: '#fff', letterSpacing: '-0.03em' }}>
+              Internix
+            </span>
           </div>
-          <h1 className="mt-6 max-w-xl text-4xl font-semibold tracking-tight md:text-5xl">
-            Welcome back to Smart Internship Management
+
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '2.25rem',
+            color: '#ffffff', letterSpacing: '-0.04em', lineHeight: 1.15,
+            marginBottom: '1rem',
+          }}>
+            Manage internships<br />
+            <span style={{ color: '#60a5fa' }}>smarter.</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-sm leading-8 text-slate-200/85 md:text-base">
-            Sign in to manage internship applications, track student progress,
-            assign mentors, and review project submissions – all from one
-            secure dashboard powered by Spring Boot.
+          <p style={{ fontSize: '0.9375rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 320 }}>
+            A unified platform for students, mentors, and administrators to manage the full internship lifecycle.
           </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              { label: 'Role Access', value: 'Student · Mentor · Admin' },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[1.5rem] border border-white/10 bg-black/15 p-4"
-              >
-                <p className="text-xs uppercase tracking-[0.28em] text-white/45">
-                  {item.label}
-                </p>
-                <p className="mt-3 text-sm font-semibold text-white leading-tight">
-                  {item.value}
-                </p>
+        </div>
+
+        {/* Feature pills */}
+        <div style={{ animation: 'slideInLeft 0.5s ease 0.15s both' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', marginBottom: '2rem' }}>
+            {FEATURES.map((f) => (
+              <div key={f.label} style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.625rem 0.875rem',
+                borderRadius: 10,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)',
+                fontWeight: 400,
+              }}>
+                <span style={{ fontSize: '1rem' }}>{f.icon}</span>
+                {f.label}
               </div>
             ))}
           </div>
-        </section>
 
-        {/* Right side – login form (white card) */}
-        <section className="rounded-[2.4rem] border border-white/10 bg-white px-6 py-7 shadow-2xl shadow-black/20 md:px-8">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              Access Portal
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Sign in</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Use your credentials to continue your internship journey.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
+            System operational · All services running
           </div>
+        </div>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email field */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Email address
-              </span>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {/* ── Right panel ── */}
+      <div style={{
+        flex: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '2rem',
+        background: 'var(--slate-50)',
+      }}>
+        <div style={{
+          width: '100%', maxWidth: 420,
+          animation: 'fadeUp 0.5s ease both',
+        }}>
+          {/* Card */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--slate-200)',
+            boxShadow: 'var(--shadow-xl)',
+            padding: '2.25rem',
+          }}>
+            <div style={{ marginBottom: '1.75rem' }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700,
+                fontSize: '1.5rem', color: 'var(--slate-900)',
+                letterSpacing: '-0.03em', marginBottom: '0.25rem',
+              }}>
+                Sign in
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--slate-500)' }}>
+                Enter your credentials to access your dashboard
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Email */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+                  Email address
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@university.edu"
+                  onFocus={() => setFocused('email')}
+                  onBlur={() => setFocused('')}
+                  className="input-field"
+                  placeholder="you@example.com"
                   required
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                  style={{
+                    boxShadow: focused === 'email' ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
+                  }}
                 />
               </div>
-            </label>
 
-            {/* Password field with show/hide */}
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Password
-              </span>
-              <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                  className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 py-3 pl-11 pr-12 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
-                >
-                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              {/* Password */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)' }}>
+                    Password
+                  </label>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={show ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocused('password')}
+                    onBlur={() => setFocused('')}
+                    className="input-field"
+                    placeholder="Enter your password"
+                    required
+                    style={{
+                      paddingRight: '2.5rem',
+                      boxShadow: focused === 'password' ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow(!show)}
+                    style={{
+                      position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--slate-400)', padding: '0.25rem',
+                      transition: 'color 150ms', display: 'flex', alignItems: 'center',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--slate-700)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--slate-400)'}
+                  >
+                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
-            </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-[1.2rem] bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              <LogIn size={18} />
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </form>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{
+                  justifyContent: 'center', padding: '0.6875rem',
+                  fontSize: '0.9375rem', fontWeight: 600,
+                  marginTop: '0.25rem',
+                  background: loading ? 'var(--slate-300)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                }}
+              >
+                {loading ? (
+                  <>
+                    <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    Signing in…
+                  </>
+                ) : (
+                  <>Sign in <ArrowRight size={16} /></>
+                )}
+              </button>
+            </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="font-semibold text-slate-950 transition hover:text-sky-700"
-            >
-              Create one
-            </Link>
-          </p>
-        </section>
+            {/* Demo credentials */}
+            <div style={{
+              marginTop: '1.25rem',
+              padding: '0.875rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--blue-50)',
+              border: '1px solid var(--blue-100)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
+                <Sparkles size={12} style={{ color: 'var(--blue-500)' }} />
+                <span style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue-600)' }}>
+                  Demo access
+                </span>
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--blue-700)', fontFamily: 'monospace' }}>
+                admin@internix.com · admin123
+              </div>
+            </div>
+
+            <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--slate-500)', marginTop: '1.25rem' }}>
+              Don't have an account?{' '}
+              <Link to="/register" style={{ color: 'var(--blue-600)', fontWeight: 600, textDecoration: 'none' }}
+                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>
+                Create one
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
