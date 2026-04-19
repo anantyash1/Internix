@@ -1,75 +1,258 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import useAuthStore from '../store/authStore';
-import { Video } from 'lucide-react';
 import {
-  LayoutDashboard,
-  ListTodo,
-  CalendarCheck,
-  FileText,
-  Users,
-  Briefcase,
-  Award,
+  LayoutDashboard, ListTodo, CalendarCheck, FileText,
+  Users, Briefcase, Award, Play, Sparkles, ChevronRight,
 } from 'lucide-react';
 
-const navItems = {
+const navGroups = {
   admin: [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/users', icon: Users, label: 'Users' },
-    { to: '/internships', icon: Briefcase, label: 'Internships' },
-    { to: '/tasks', icon: ListTodo, label: 'Tasks' },
-    { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
-    { to: '/reports', icon: FileText, label: 'Reports' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
-    { to: '/videos', icon: Video, label: 'Videos' },
+    { label: 'Overview', items: [
+      { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
+    ]},
+    { label: 'Management', items: [
+      { to: '/users',        icon: Users,          label: 'Users' },
+      { to: '/internships',  icon: Briefcase,      label: 'Internships' },
+      { to: '/certificates', icon: Award,          label: 'Certificates' },
+    ]},
+    { label: 'Activity', items: [
+      { to: '/tasks',      icon: ListTodo,    label: 'Tasks' },
+      { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
+      { to: '/reports',    icon: FileText,    label: 'Reports' },
+      { to: '/videos',     icon: Play,        label: 'Videos' },
+    ]},
+    { label: 'AI Features', items: [
+      { to: '/ai-summary', icon: Sparkles, label: 'AI Insights', badge: 'New' },
+    ]},
   ],
   mentor: [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/users', icon: Users, label: 'My Students' },
-    { to: '/tasks', icon: ListTodo, label: 'Tasks' },
-    { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
-    { to: '/reports', icon: FileText, label: 'Reports' },
-    { to: '/internships', icon: Briefcase, label: 'Internships' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
-    { to: '/videos', icon: Video, label: 'Videos' },
+    { label: 'Overview', items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    ]},
+    { label: 'My Students', items: [
+      { to: '/users',       icon: Users,          label: 'Students' },
+      { to: '/internships', icon: Briefcase,      label: 'Internships' },
+    ]},
+    { label: 'Activity', items: [
+      { to: '/tasks',      icon: ListTodo,      label: 'Tasks' },
+      { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
+      { to: '/reports',    icon: FileText,      label: 'Reports' },
+      { to: '/videos',     icon: Play,          label: 'Videos' },
+    ]},
+    { label: 'AI Features', items: [
+      { to: '/ai-summary', icon: Sparkles, label: 'AI Insights', badge: 'New' },
+    ]},
   ],
   student: [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/tasks', icon: ListTodo, label: 'My Tasks' },
-    { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
-    { to: '/reports', icon: FileText, label: 'Reports' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
-    { to: '/videos', icon: Video, label: 'Learning' },
+    { label: 'Overview', items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    ]},
+    { label: 'My Work', items: [
+      { to: '/tasks',      icon: ListTodo,      label: 'My Tasks' },
+      { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
+      { to: '/reports',    icon: FileText,      label: 'Reports' },
+      { to: '/videos',     icon: Play,          label: 'Learning' },
+    ]},
+    { label: 'Achievements', items: [
+      { to: '/certificates', icon: Award, label: 'Certificates' },
+    ]},
   ],
 };
 
 export default function Sidebar() {
-  const user = useAuthStore((s) => s.user);
-  const items = navItems[user?.role] || navItems.student;
+  const user    = useAuthStore((s) => s.user);
+  const { pathname } = useLocation();
+  const groups  = navGroups[user?.role] || navGroups.student;
+  const [hovered, setHovered] = useState(null);
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-100">
-        <h1 className="text-2xl font-bold text-primary-700 tracking-tight">Internix</h1>
-        <p className="text-xs text-gray-400 mt-1">Internship Management</p>
+    <aside
+      style={{
+        width: 256,
+        background: 'var(--navy-900)',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        position: 'relative',
+        flexShrink: 0,
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+      }}
+    >
+      {/* Subtle top gradient accent */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 180,
+        background: 'radial-gradient(ellipse at 50% -20%, rgba(37,99,235,0.18) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Logo */}
+      <div style={{
+        padding: '1.5rem 1.25rem 1.25rem',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        position: 'relative',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+          <div style={{
+            width: 34, height: 34,
+            background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+            borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(37,99,235,0.45)',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff' }}>I</span>
+          </div>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem',
+              color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1,
+            }}>Internix</div>
+            <div style={{ fontSize: '0.625rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+              Management System
+            </div>
+          </div>
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {items.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {groups.map((group) => (
+          <div key={group.label}>
+            <div style={{
+              fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)',
+              padding: '0 0.5rem', marginBottom: '0.375rem',
+            }}>
+              {group.label}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {group.items.map(({ to, icon: Icon, label, badge }) => {
+                const active = pathname === to || pathname.startsWith(to + '/');
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onMouseEnter={() => setHovered(to)}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.625rem',
+                      padding: '0.5625rem 0.75rem',
+                      borderRadius: 9,
+                      textDecoration: 'none',
+                      position: 'relative',
+                      transition: 'all 180ms ease',
+                      background: active
+                        ? 'rgba(37,99,235,0.18)'
+                        : hovered === to
+                        ? 'rgba(255,255,255,0.05)'
+                        : 'transparent',
+                    }}
+                  >
+                    {/* Active indicator bar */}
+                    {active && (
+                      <span style={{
+                        position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                        width: 3, borderRadius: '0 3px 3px 0',
+                        background: '#3b82f6',
+                        boxShadow: '0 0 10px #3b82f6',
+                        transition: 'all 200ms',
+                      }} />
+                    )}
+
+                    {/* Icon */}
+                    <div style={{
+                      width: 30, height: 30, borderRadius: 8,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      background: active
+                        ? 'rgba(59,130,246,0.25)'
+                        : hovered === to
+                        ? 'rgba(255,255,255,0.07)'
+                        : 'transparent',
+                      transition: 'background 180ms ease',
+                    }}>
+                      <Icon
+                        size={16}
+                        style={{
+                          color: active ? '#60a5fa' : 'rgba(255,255,255,0.45)',
+                          transition: 'color 180ms ease',
+                          flexShrink: 0,
+                        }}
+                      />
+                    </div>
+
+                    <span style={{
+                      fontSize: '0.8125rem',
+                      fontWeight: active ? 600 : 400,
+                      color: active ? '#ffffff' : 'rgba(255,255,255,0.55)',
+                      transition: 'all 180ms ease',
+                      flex: 1,
+                    }}>
+                      {label}
+                    </span>
+
+                    {badge && (
+                      <span style={{
+                        fontSize: '0.5625rem', fontWeight: 700, letterSpacing: '0.06em',
+                        padding: '1px 6px', borderRadius: 999,
+                        background: 'rgba(245,158,11,0.2)',
+                        color: '#fbbf24',
+                        border: '1px solid rgba(245,158,11,0.3)',
+                      }}>
+                        {badge}
+                      </span>
+                    )}
+
+                    {active && (
+                      <ChevronRight size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </nav>
+
+      {/* User badge at bottom */}
+      <div style={{
+        padding: '0.75rem',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.625rem',
+          padding: '0.625rem 0.75rem',
+          borderRadius: 10,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            fontSize: '0.75rem', fontWeight: 700, color: '#fff',
+            fontFamily: 'var(--font-display)',
+          }}>
+            {user?.name?.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: '0.8125rem', fontWeight: 600, color: 'rgba(255,255,255,0.88)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {user?.name}
+            </div>
+            <div style={{
+              fontSize: '0.625rem', color: 'rgba(255,255,255,0.35)',
+              textTransform: 'capitalize', letterSpacing: '0.04em', fontWeight: 600,
+            }}>
+              {user?.role}
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

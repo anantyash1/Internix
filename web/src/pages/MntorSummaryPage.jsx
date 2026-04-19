@@ -2,12 +2,140 @@ import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import api from '../lib/axios';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import StatCard from '../components/ui/StatCard';
 import toast from 'react-hot-toast';
 import {
   Sparkles, RefreshCw, TrendingUp, TrendingDown, Users,
   CheckCircle, FileText, CalendarCheck, AlertCircle, Star,
   ChevronRight, Zap,
 } from 'lucide-react';
+
+const FETCH_LIMIT = 1000;
+
+const getEntityId = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value._id || value.id || '';
+};
+
+const isCompletedTask = (task) => ['completed', 'reviewed'].includes(task?.status);
+const isCompletedAttendance = (record) => ['present', 'late'].includes(record?.status);
+const isCompletedReport = (report) => report?.status === 'approved';
+
+const percent = (completed, total) => (total > 0 ? Math.round((completed / total) * 100) : 0);
+
+const startOfCurrentWeek = () => {
+  const date = new Date();
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const endOfToday = () => {
+  const date = new Date();
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
+const countWeekdaysInclusive = (startDate, endDate) => {
+  let count = 0;
+  const cursor = new Date(startDate);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  while (cursor <= end) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+};
+
+const latestDate = (dates) => {
+  const validDates = dates
+    .filter(Boolean)
+    .map((date) => new Date(date))
+    .filter((date) => !Number.isNaN(date.getTime()));
+
+  if (validDates.length === 0) return null;
+  return new Date(Math.max(...validDates.map((date) => date.getTime()))).toISOString();
+};
+
+const buildStudentMetrics = ({ students, tasks, attendanceRecords, reports, workingDays }) => {
+  const studentIds = new Set(students.map((student) => getEntityId(student)));
+  const visibleTasks = tasks.filter((task) => studentIds.has(getEntityId(task.assignedTo)));
+  const visibleAttendance = attendanceRecords.filter((record) => studentIds.has(getEntityId(record.student)));
+  const visibleReports = reports.filter((report) => studentIds.has(getEntityId(report.student)));
+
+  const completedTasks = visibleTasks.filter(isCompletedTask).length;
+  const completedAttendance = visibleAttendance.filter(isCompletedAttendance).length;
+  const approvedReports = visibleReports.filter(isCompletedReport).length;
+  const submittedReports = visibleReports.length;
+  const expectedAttendance = workingDays * students.length;
+  const expectedReports = visibleTasks.length;
+
+  const enrichedStudents = students.map((student) => {
+    const studentId = getEntityId(student);
+    const studentTasks = visibleTasks.filter((task) => getEntityId(task.assignedTo) === studentId);
+    const studentAttendance = visibleAttendance.filter((record) => getEntityId(record.student) === studentId);
+    const studentReports = visibleReports.filter((report) => getEntityId(report.student) === studentId);
+
+    const studentCompletedTasks = studentTasks.filter(isCompletedTask).length;
+    const studentCompletedAttendance = studentAttendance.filter(isCompletedAttendance).length;
+    const studentApprovedReports = studentReports.filter(isCompletedReport).length;
+    const studentExpectedReports = studentTasks.length;
+
+    return {
+      ...student,
+      taskCompletionRate: percent(studentCompletedTasks, studentTasks.length),
+      attendanceRate: percent(studentCompletedAttendance, workingDays),
+      reportsStatus: studentExpectedReports === 0
+        ? 'no tasks'
+        : studentApprovedReports >= studentExpectedReports
+        ? 'all approved'
+        : studentReports.length > 0
+        ? 'pending'
+        : 'missing',
+      lastActive: latestDate([
+        ...studentTasks.map((task) => task.updatedAt || task.completedAt || task.createdAt),
+        ...studentAttendance.map((record) => record.date || record.updatedAt || record.createdAt),
+        ...studentReports.map((report) => report.updatedAt || report.reviewedAt || report.createdAt),
+      ]),
+      metrics: {
+        completedTasks: studentCompletedTasks,
+        totalTasks: studentTasks.length,
+        completedAttendance: studentCompletedAttendance,
+        expectedAttendance: workingDays,
+        approvedReports: studentApprovedReports,
+        submittedReports: studentReports.length,
+        expectedReports: studentExpectedReports,
+      },
+    };
+  });
+
+  return {
+    students: enrichedStudents,
+    stats: {
+      totalStudents: students.length,
+      completedTasks,
+      totalTasks: visibleTasks.length,
+      taskRate: percent(completedTasks, visibleTasks.length),
+      completedAttendance,
+      expectedAttendance,
+      attendanceRate: percent(completedAttendance, expectedAttendance),
+      approvedReports,
+      submittedReports,
+      expectedReports,
+      reportRate: percent(approvedReports, expectedReports),
+      workingDays,
+    },
+  };
+};
+
 
 /* ─── Mini components ─── */
 function InsightBlock({ icon: Icon, color, bg, title, children }) {
@@ -42,10 +170,17 @@ function InsightBlock({ icon: Icon, color, bg, title, children }) {
   );
 }
 
+// function StudentRow({ student, index }) {
+//   const score = student.taskCompletionRate ?? 0;
+//   const color = score >= 75 ? 'var(--emerald-500)' : score >= 40 ? 'var(--amber-500)' : 'var(--rose-500)';
+//   const bg    = score >= 75 ? 'var(--emerald-50)'  : score >= 40 ? 'var(--amber-50)'  : 'var(--rose-50)';
+
 function StudentRow({ student, index }) {
+  const metrics = student.metrics || {};
   const score = student.taskCompletionRate ?? 0;
+  const attendanceScore = student.attendanceRate ?? 0;
   const color = score >= 75 ? 'var(--emerald-500)' : score >= 40 ? 'var(--amber-500)' : 'var(--rose-500)';
-  const bg    = score >= 75 ? 'var(--emerald-50)'  : score >= 40 ? 'var(--amber-50)'  : 'var(--rose-50)';
+
 
   return (
     <tr style={{ animationDelay: `${index * 50}ms` }}
@@ -70,7 +205,7 @@ function StudentRow({ student, index }) {
           </div>
         </div>
       </td>
-      <td>
+      {/* <td>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ flex: 1, height: 6, background: 'var(--slate-100)', borderRadius: 999, overflow: 'hidden', maxWidth: 80 }}>
             <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 999, transition: 'width 0.6s ease' }} />
@@ -90,7 +225,31 @@ function StudentRow({ student, index }) {
         <span className={`badge badge-${student.reportsStatus === 'all approved' ? 'green' : student.reportsStatus === 'pending' ? 'amber' : 'gray'}`}>
           {student.reportsStatus ?? 'n/a'}
         </span>
+      </td> */}
+<td>
+       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ flex: 1, height: 6, background: 'var(--slate-100)', borderRadius: 999, overflow: 'hidden', maxWidth: 80 }}>
+            <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 999, transition: 'width 0.6s ease' }} />
+          </div>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color }}>
+            {metrics.completedTasks ?? 0}/{metrics.totalTasks ?? 0}
+          </span>
+        </div>
       </td>
+      <td>
+        <span style={{
+          display: 'inline-block', fontSize: '0.8125rem', fontWeight: 600,
+          color: attendanceScore >= 80 ? 'var(--emerald-500)' : 'var(--amber-500)',
+        }}>
+          {metrics.completedAttendance ?? 0}/{metrics.expectedAttendance ?? 0}
+        </span>
+      </td>
+      <td>
+        <span className={`badge badge-${student.reportsStatus === 'all approved' ? 'green' : student.reportsStatus === 'pending' ? 'amber' : 'gray'}`}>
+          {metrics.approvedReports ?? 0}/{metrics.expectedReports ?? 0} {student.reportsStatus ?? ''}
+        </span>
+      </td>
+      {/* <td style={{ color: 'var(--slate-400)', fontSize: '0.8125rem' }}></td> */}
       <td style={{ color: 'var(--slate-400)', fontSize: '0.8125rem' }}>
         {student.lastActive ? new Date(student.lastActive).toLocaleDateString() : '—'}
       </td>
@@ -154,45 +313,93 @@ export default function MentorSummaryPage() {
 
   useEffect(() => { fetchStudentData(); }, []);
 
+  // const fetchStudentData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const { data } = await api.get('/users', { params: { role: 'student' } });
+  //     const studs = data.users || [];
+  //     setStudents(studs);
+
+  //     /* Compute aggregate stats */
+  //     const taskRes  = await api.get('/tasks');
+  //     const attendRes = await api.get('/attendance');
+  //     const reportRes = await api.get('/reports');
+
+  //     setStats({
+  //       totalStudents: studs.length,
+  //       totalTasks: taskRes.data.total ?? 0,
+  //       totalAttendance: attendRes.data.total ?? 0,
+  //       totalReports: reportRes.data.total ?? 0,
+  //       avgCompletion: studs.length > 0
+  //         ? Math.round(studs.reduce((a, s) => a + (s.taskCompletionRate ?? 0), 0) / studs.length)
+  //         : 0,
+  //     });
+  //   } catch { toast.error('Failed to load student data'); }
+  //   setLoading(false);
+  // };
+
   const fetchStudentData = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/users', { params: { role: 'student' } });
+      const weekStart = startOfCurrentWeek();
+      const todayEnd = endOfToday();
+      const { data } = await api.get('/users', { params: { role: 'student', limit: FETCH_LIMIT } });
       const studs = data.users || [];
-      setStudents(studs);
 
-      /* Compute aggregate stats */
-      const taskRes  = await api.get('/tasks');
-      const attendRes = await api.get('/attendance');
-      const reportRes = await api.get('/reports');
+      const [taskRes, attendRes, reportRes] = await Promise.all([
+        api.get('/tasks', { params: { limit: FETCH_LIMIT } }),
+        api.get('/attendance', {
+          params: {
+            startDate: weekStart.toISOString(),
+            endDate: todayEnd.toISOString(),
+            limit: FETCH_LIMIT,
+          },
+        }),
+        api.get('/reports', { params: { limit: FETCH_LIMIT } }),
+      ]);
 
-      setStats({
-        totalStudents: studs.length,
-        totalTasks: taskRes.data.total ?? 0,
-        totalAttendance: attendRes.data.total ?? 0,
-        totalReports: reportRes.data.total ?? 0,
-        avgCompletion: studs.length > 0
-          ? Math.round(studs.reduce((a, s) => a + (s.taskCompletionRate ?? 0), 0) / studs.length)
-          : 0,
+      const metrics = buildStudentMetrics({
+        students: studs,
+        tasks: taskRes.data.tasks || [],
+        attendanceRecords: attendRes.data.records || [],
+        reports: reportRes.data.reports || [],
+        workingDays: countWeekdaysInclusive(weekStart, todayEnd),
       });
-    } catch { toast.error('Failed to load student data'); }
+
+      console.log('Fetched data:', { students: studs.length, metrics });
+      setStudents(metrics.students);
+      setStats(metrics.stats);
+    } catch (err) {
+      console.error('Failed to load student data:', err);
+      toast.error('Failed to load student data: ' + (err?.message || 'Unknown error'));
+    }
     setLoading(false);
   };
+
 
   const generateSummary = async () => {
     if (students.length === 0) return toast.error('No students to analyze');
     setGenerating(true);
     setSummary('');
     try {
+      const avgTaskCompletion = students.length > 0
+        ? Math.round(students.reduce((a, s) => a + (s.taskCompletionRate ?? 0), 0) / students.length)
+        : 0;
+
       const context = `
 Mentor: ${user?.name}
-Students: ${students.length}
-Average task completion: ${stats?.avgCompletion ?? 0}%
-Total tasks assigned: ${stats?.totalTasks ?? 0}
-Total attendance records: ${stats?.totalAttendance ?? 0}
-Total reports submitted: ${stats?.totalReports ?? 0}
-Student breakdown: ${students.slice(0, 10).map(s => `${s.name} (completion: ${s.taskCompletionRate ?? 0}%)`).join(', ')}
 Week: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
+Summary Stats:
+- Total Students: ${students.length}
+- Tasks Completed: ${stats?.completedTasks ?? 0}/${stats?.totalTasks ?? 0} (${stats?.taskRate ?? 0}%)
+- Attendance Marked: ${stats?.completedAttendance ?? 0}/${stats?.expectedAttendance ?? 0} (${stats?.attendanceRate ?? 0}%)
+- Reports Approved: ${stats?.approvedReports ?? 0}/${stats?.expectedReports ?? 0} (${stats?.reportRate ?? 0}%)
+- Working Days This Week: ${stats?.workingDays ?? 0}
+- Average Task Completion: ${avgTaskCompletion}%
+
+Top Students:
+${students.slice(0, 10).map(s => `- ${s.name}: ${s.metrics?.completedTasks ?? 0}/${s.metrics?.totalTasks ?? 0} tasks, ${s.attendanceRate ?? 0}% attendance, ${s.metrics?.approvedReports ?? 0}/${s.metrics?.expectedReports ?? 0} reports`).join('\n')}
       `.trim();
 
       const { data } = await api.post('/ai/chat', {
@@ -206,7 +413,10 @@ Week: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric
       setGenerated(true);
       setGeneratedAt(new Date());
       toast.success('Summary generated!');
-    } catch { toast.error('AI generation failed. Check your ANTHROPIC_API_KEY.'); }
+    } catch (err) { 
+      console.error('AI generation failed:', err);
+      toast.error('AI generation failed. Check your ANTHROPIC_API_KEY.');
+    }
     setGenerating(false);
   };
 
@@ -281,12 +491,38 @@ Week: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric
       </div>
 
       {/* Quick stats */}
-      {stats && (
+      {/* {stats && (
         <div className="animate-fade-up stagger-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
           <StatCard title="My Students"    value={stats.totalStudents}   icon={Users}        color="primary" />
           <StatCard title="Tasks Assigned" value={stats.totalTasks}      icon={CheckCircle}  color="green" />
           <StatCard title="Check-ins"      value={stats.totalAttendance} icon={CalendarCheck} color="amber" />
           <StatCard title="Avg. Completion" value={`${stats.avgCompletion}%`} icon={TrendingUp} color="violet" />
+        </div>
+      )} */}
+      {stats && (
+        <div className="animate-fade-up stagger-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem' }}>
+          <StatCard title="My Students" value={stats.totalStudents} icon={Users} color="primary" />
+          <StatCard
+            title="Tasks Completed"
+            value={`${stats.completedTasks}/${stats.totalTasks}`}
+            subtitle={`${stats.taskRate}% complete`}
+            icon={CheckCircle}
+            color="green"
+          />
+          <StatCard
+            title="Attendance Marked"
+            value={`${stats.completedAttendance}/${stats.expectedAttendance}`}
+            subtitle={`${stats.workingDays} weekdays this week`}
+            icon={CalendarCheck}
+            color="amber"
+          />
+          <StatCard
+            title="Reports Approved"
+            value={`${stats.approvedReports}/${stats.expectedReports}`}
+            subtitle={`${stats.submittedReports} submitted`}
+            icon={FileText}
+            color="violet"
+          />
         </div>
       )}
 
@@ -351,9 +587,9 @@ Week: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric
               <thead>
                 <tr>
                   <th style={{ padding: '0.875rem 1.25rem 0.75rem' }}>Student</th>
-                  <th>Task completion</th>
-                  <th>Attendance</th>
-                  <th>Reports</th>
+                  <th>Tasks done</th>
+                  <th>Attendance this week</th>
+                  <th>Reports approved</th>
                   <th>Last active</th>
                 </tr>
               </thead>
