@@ -8,6 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// ─── Report storage ───────────────────────────────────────────────────────────
 const reportStorage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -22,4 +23,29 @@ const uploadReport = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-module.exports = { cloudinary, uploadReport };
+// ─── Attendance photo storage ─────────────────────────────────────────────────
+const attendancePhotoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'internix/attendance',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    resource_type: 'image',
+    transformation: [
+      { width: 640, height: 640, crop: 'limit', quality: 'auto:good' },
+    ],
+  },
+});
+
+const uploadAttendancePhoto = multer({
+  storage: attendancePhotoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for attendance photos'), false);
+    }
+  },
+});
+
+module.exports = { cloudinary, uploadReport, uploadAttendancePhoto };

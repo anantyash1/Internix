@@ -8,6 +8,7 @@ import 'reports_screen.dart';
 import 'certificates_screen.dart';
 import 'videos_screen.dart';
 import 'ai_chat_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,79 +23,94 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final role = auth.role;
+    final userName = auth.user?['name']?.split(' ').first ?? 'User';
 
-    final screens = <Widget>[
-      const DashboardScreen(),
-      const TasksScreen(),
-      const AttendanceScreen(),
-      const ReportsScreen(),
-      if (role == 'student') const CertificatesScreen(),
-      const VideosScreen(),
-      const AiChatScreen(),
-    ];
-
-    final navItems = <BottomNavigationBarItem>[
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.dashboard_outlined),
-        activeIcon: Icon(Icons.dashboard),
+    // ── Build screen list based on role ───────────────────────────────
+    final screens = <_NavItem>[
+      _NavItem(
+        screen: const DashboardScreen(),
         label: 'Dashboard',
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard,
       ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.task_outlined),
-        activeIcon: Icon(Icons.task),
+      _NavItem(
+        screen: const TasksScreen(),
         label: 'Tasks',
+        icon: Icons.task_outlined,
+        activeIcon: Icons.task,
       ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.calendar_today_outlined),
-        activeIcon: Icon(Icons.calendar_today),
+      _NavItem(
+        screen: const AttendanceScreen(),
         label: 'Attendance',
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today,
       ),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.description_outlined),
-        activeIcon: Icon(Icons.description),
+      _NavItem(
+        screen: const ReportsScreen(),
         label: 'Reports',
+        icon: Icons.description_outlined,
+        activeIcon: Icons.description,
       ),
-      const BottomNavigationBarItem(
-  icon: Icon(Icons.play_circle_outline),
-  activeIcon: Icon(Icons.play_circle),
-  label: 'Videos',
-),
-const BottomNavigationBarItem(
-  icon: Icon(Icons.smart_toy_outlined),
-  activeIcon: Icon(Icons.smart_toy),
-  label: 'AI Chat',
-),
+      _NavItem(
+        screen: const VideosScreen(),
+        label: 'Videos',
+        icon: Icons.play_circle_outline,
+        activeIcon: Icons.play_circle,
+      ),
       if (role == 'student')
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.emoji_events_outlined),
-          activeIcon: Icon(Icons.emoji_events),
+        _NavItem(
+          screen: const CertificatesScreen(),
           label: 'Certificates',
+          icon: Icons.emoji_events_outlined,
+          activeIcon: Icons.emoji_events,
         ),
+      _NavItem(
+        screen: const AiChatScreen(),
+        label: 'AI Chat',
+        icon: Icons.smart_toy_outlined,
+        activeIcon: Icons.smart_toy,
+      ),
     ];
 
-    // Clamp index
+    // Clamp index to valid range
     if (_currentIndex >= screens.length) {
       _currentIndex = 0;
     }
 
+    final currentItem = screens[_currentIndex];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Internix'),
+        title: Text(currentItem.label),
         actions: [
-          Chip(
-            label: Text(
-              role.toUpperCase(),
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          // Role chip
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: role == 'admin'
+                  ? const Color(0xFFEDE9FE)
+                  : role == 'mentor'
+                      ? const Color(0xFFFEF3C7)
+                      : const Color(0xFFDBEAFE),
+              borderRadius: BorderRadius.circular(20),
             ),
-            backgroundColor: const Color(0xFFDBEAFE),
-            labelStyle: const TextStyle(color: Color(0xFF1E40AF)),
-            side: BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              role.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: role == 'admin'
+                    ? const Color(0xFF5B21B6)
+                    : role == 'mentor'
+                        ? const Color(0xFF92400E)
+                        : const Color(0xFF1E40AF),
+              ),
+            ),
           ),
-          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
+            tooltip: 'Sign out',
             onPressed: () async {
               await auth.logout();
               if (mounted) {
@@ -106,19 +122,32 @@ const BottomNavigationBarItem(
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: screens,
+        children: screens.map((s) => s.screen).toList(),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: navItems
+        destinations: screens
             .map((item) => NavigationDestination(
-                  icon: item.icon,
-                  selectedIcon: item.activeIcon,
+                  icon: Icon(item.icon),
+                  selectedIcon: Icon(item.activeIcon),
                   label: item.label,
                 ))
             .toList(),
       ),
     );
   }
+}
+
+class _NavItem {
+  final Widget screen;
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+  const _NavItem({
+    required this.screen,
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
 }
