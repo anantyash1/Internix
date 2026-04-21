@@ -9,6 +9,7 @@ import {
   CheckCircle, AlertCircle,
 } from 'lucide-react';
 
+// Onboarding page component for student creation and management
 // ── Generate random password ───────────────────────────────────────────────────
 function generatePassword(len = 10) {
   const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#';

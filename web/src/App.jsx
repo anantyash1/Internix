@@ -12,7 +12,10 @@
 // import CertificatesPage from './pages/CertificatesPage';
 // import VideosPage from './pages/VideosPage';
 // import MentorSummaryPage from "./pages/MntorSummaryPage";
+// import WorkSchedulePage from "./pages/WorkSchedulePage";
+// import OnboardingPage from "./pages/OnboardingPage";
 
+// // Routes for different user roles
 // function ProtectedRoute({ children, roles }) {
 //   const user = useAuthStore((s) => s.user);
 //   if (!user) return <Navigate to="/login" replace />;
@@ -41,9 +44,19 @@
 //             <MentorSummaryPage />
 //           </ProtectedRoute>
 //         } />
+//         <Route path="work-schedule" element={
+//           <ProtectedRoute roles={['admin']}>
+//             <WorkSchedulePage />
+//           </ProtectedRoute>
+//         } />
 //         <Route path="users" element={
 //           <ProtectedRoute roles={['admin', 'mentor']}>
 //             <UsersPage />
+//           </ProtectedRoute>
+//         } />
+//         <Route path="onboarding" element={
+//           <ProtectedRoute roles={['admin', 'mentor']}>
+//             <OnboardingPage />
 //           </ProtectedRoute>
 //         } />
 //         <Route path="internships" element={
@@ -60,7 +73,6 @@
 
 
 
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import Layout from './components/Layout';
@@ -74,8 +86,10 @@ import UsersPage from './pages/UsersPage';
 import InternshipsPage from './pages/InternshipsPage';
 import CertificatesPage from './pages/CertificatesPage';
 import VideosPage from './pages/VideosPage';
-import MentorSummaryPage from "./pages/MntorSummaryPage";
-import WorkSchedulePage from "./pages/WorkSchedulePage";
+import MentorSummaryPage from './pages/MntorSummaryPage';
+import WorkSchedulePage from './pages/WorkSchedulePage';
+import OnboardingPage from './pages/OnboardingPage';
+import TestsPage from './pages/TestsPage';
 
 function ProtectedRoute({ children, roles }) {
   const user = useAuthStore((s) => s.user);
@@ -100,6 +114,7 @@ export default function App() {
         <Route path="reports"      element={<ReportsPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
         <Route path="videos"       element={<VideosPage />} />
+        <Route path="tests"        element={<TestsPage />} />
         <Route path="ai-summary"   element={
           <ProtectedRoute roles={['admin', 'mentor']}>
             <MentorSummaryPage />
