@@ -34,15 +34,16 @@ const useVideoStore = create((set, get) => ({
     set({ videos: get().videos.filter((v) => v._id !== id) });
   },
 
-  markComplete: async (videoId) => {
-    await api.post(`/videos/${videoId}/complete`);
+  syncVideoProgress: async (videoId, payload) => {
+    const { data } = await api.post(`/videos/${videoId}/progress`, payload);
     set({
       videos: get().videos.map((v) =>
         v._id === videoId
-          ? { ...v, progress: { completed: true, completedAt: new Date() } }
+          ? { ...v, progress: data.progress }
           : v
       ),
     });
+    return data;
   },
 }));
 

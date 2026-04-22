@@ -25,20 +25,26 @@ class VideoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> markComplete(String videoId) async {
+  Future<Map<String, dynamic>?> syncProgress(
+    String videoId,
+    Map<String, dynamic> payload,
+  ) async {
     try {
-      await ApiService.post('/videos/$videoId/complete', body: {});
+      final data = await ApiService.post(
+        '/videos/$videoId/progress',
+        body: payload,
+      );
       final idx = _videos.indexWhere((v) => v['_id'] == videoId);
-      if (idx != -1) {
+      if (idx != -1 && data['progress'] != null) {
         _videos[idx] = {
           ..._videos[idx],
-          'progress': {'completed': true},
+          'progress': data['progress'],
         };
         notifyListeners();
       }
-      return true;
+      return data['progress'] as Map<String, dynamic>?;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 }

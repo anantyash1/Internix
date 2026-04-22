@@ -931,7 +931,7 @@ ${students.slice(0, 10).map(s => `- ${s.name}: ${s.metrics?.completedTasks ?? 0}
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: 1100 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: 10000, margin: '0 auto', padding: '1rem' }}>
       {/* Header card */}
       <div className="animate-fade-up" style={{
         background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)',

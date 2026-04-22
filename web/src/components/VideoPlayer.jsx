@@ -1,25 +1,10 @@
-import { useState } from 'react';
 import { CheckCircle, Play } from 'lucide-react';
-import useVideoStore from '../store/videoStore';
-import toast from 'react-hot-toast';
 
-export default function VideoPlayer({ video, canMark = false }) {
-  const [played, setPlayed] = useState(false);
-  const { markComplete } = useVideoStore();
+export default function VideoPlayer({ video }) {
   const isCompleted = video?.progress?.completed;
-
-  const handleMark = async () => {
-    try {
-      await markComplete(video._id);
-      toast.success('Marked as completed!');
-    } catch {
-      toast.error('Failed to mark');
-    }
-  };
 
   return (
     <div className="space-y-4">
-      {/* Player */}
       <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
         {video.type === 'youtube' ? (
           <iframe
@@ -27,20 +12,13 @@ export default function VideoPlayer({ video, canMark = false }) {
             className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
             allowFullScreen
-            onPlay={() => setPlayed(true)}
             title={video.title}
           />
         ) : (
-          <video
-            src={video.url}
-            controls
-            className="w-full h-full"
-            onPlay={() => setPlayed(true)}
-          />
+          <video src={video.url} controls className="w-full h-full" />
         )}
       </div>
 
-      {/* Info bar */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h3 className="font-semibold text-gray-900">{video.title}</h3>
@@ -53,20 +31,11 @@ export default function VideoPlayer({ video, canMark = false }) {
             <span>By {video.createdBy?.name}</span>
           </div>
         </div>
-        {canMark && (
-          <button
-            onClick={handleMark}
-            disabled={isCompleted}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isCompleted
-                ? 'bg-green-100 text-green-700 cursor-default'
-                : 'btn-primary'
-            }`}
-          >
-            <CheckCircle size={16} />
-            {isCompleted ? 'Completed' : 'Mark Complete'}
-          </button>
-        )}
+
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${isCompleted ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+          {isCompleted ? <CheckCircle size={16} /> : <Play size={16} />}
+          {isCompleted ? 'Completed Automatically' : 'Auto Completion Enabled'}
+        </div>
       </div>
     </div>
   );

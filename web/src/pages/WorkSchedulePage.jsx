@@ -191,7 +191,7 @@ export default function WorkSchedulePage() {
   if (loading) return <LoadingSpinner label="Loading schedules…" />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: 900 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: 10000, margin: '0 auto', padding: '1rem' }}>
       {/* Header */}
       <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--blue-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(37,99,235,0.15)' }}>

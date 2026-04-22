@@ -59,10 +59,10 @@ export default function LoginPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
             }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff' }}>I</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff' }}>MR</span>
             </div>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.25rem', color: '#fff', letterSpacing: '-0.03em' }}>
-              Internix
+              MR Techlab LLP
             </span>
           </div>
 
@@ -195,6 +195,9 @@ export default function LoginPage() {
                     {show ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--slate-500)', lineHeight: 1.5 }}>
+                  Forgot your password? Contact the admin. They can set a new student password for you.
+                </p>
               </div>
 
               {/* Submit */}
@@ -221,7 +224,7 @@ export default function LoginPage() {
             </form>
 
             {/* Demo credentials */}
-            <div style={{
+            {/* <div style={{
               marginTop: '1.25rem',
               padding: '0.875rem 1rem',
               borderRadius: 'var(--radius-md)',
@@ -231,13 +234,13 @@ export default function LoginPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
                 <Sparkles size={12} style={{ color: 'var(--blue-500)' }} />
                 <span style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue-600)' }}>
-                  Demo access
+                  
                 </span>
               </div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--blue-700)', fontFamily: 'monospace' }}>
-                admin@internix.com · admin123
+                
               </div>
-            </div>
+            </div> */}
 
             <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: 'var(--slate-500)', marginTop: '1.25rem' }}>
               Don't have an account?{' '}

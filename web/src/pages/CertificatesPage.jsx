@@ -337,7 +337,7 @@ export default function CertificatesPage() {
   if (loading) return <LoadingSpinner label="Loading certificates…" />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 860 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 10000, margin: '0 auto', padding: '1rem' }}>
       {/* Page header */}
       <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>

@@ -98,6 +98,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (v) =>
                         v == null || v.length < 6 ? 'Min 6 characters' : null,
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Forgot password? Contact the admin. They can reset the student password for you.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                    textAlign: TextAlign.left,
+                  ),
                   const SizedBox(height: 24),
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) => SizedBox(

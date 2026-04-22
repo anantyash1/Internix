@@ -73,6 +73,7 @@
 
 
 
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import Layout from './components/Layout';
@@ -100,6 +101,14 @@ function ProtectedRoute({ children, roles }) {
 
 export default function App() {
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const fetchMe = useAuthStore((s) => s.fetchMe);
+
+  useEffect(() => {
+    if (token) {
+      fetchMe();
+    }
+  }, [fetchMe, token]);
 
   return (
     <Routes>

@@ -6,7 +6,14 @@ const videoProgressSchema = new mongoose.Schema(
     video: { type: mongoose.Schema.Types.ObjectId, ref: 'Video', required: true },
     completed: { type: Boolean, default: false },
     completedAt: { type: Date },
-    watchedSeconds: { type: Number, default: 0 }, // for upload videos
+    watchedSeconds: { type: Number, default: 0 },
+    durationSeconds: { type: Number, default: 0 },
+    lastPositionSeconds: { type: Number, default: 0 },
+    maxPositionSeconds: { type: Number, default: 0 },
+    lastPingAt: { type: Date },
+    skipped: { type: Boolean, default: false },
+    skipDetectedAt: { type: Date },
+    skipReason: { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -14,4 +21,4 @@ const videoProgressSchema = new mongoose.Schema(
 videoProgressSchema.index({ student: 1, video: 1 }, { unique: true });
 videoProgressSchema.index({ student: 1 });
 
-module.exports = mongoose.model('VideoProgress', videoProgressSchema);
+module.exports = mongoose.models.VideoProgress || mongoose.model('VideoProgress', videoProgressSchema);

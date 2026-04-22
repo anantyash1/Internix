@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useUserStore from '../store/userStore';
+import api from '../lib/axios';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Modal from '../components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Trash2, UserCog, Search } from 'lucide-react';
+import { Copy, KeyRound, RefreshCw, Search, Trash2, UserCog } from 'lucide-react';
+
+function generatePassword(length = 10) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$';
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
 export default function UsersPage() {
   const user = useAuthStore((s) => s.user);
-  const { users, loading, fetchUsers, assignMentor, deleteUser } = useUserStore();
+  const { users, loading, fetchUsers, assignMentor, resetStudentPassword, deleteUser } = useUserStore();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showAssign, setShowAssign] = useState(null);
   const [mentors, setMentors] = useState([]);
   const [selectedMentor, setSelectedMentor] = useState('');
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetPassword, setResetPassword] = useState(generatePassword());
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     fetchUsers({ search, role: roleFilter });
@@ -21,12 +30,26 @@ export default function UsersPage() {
 
   const openAssignModal = async (studentId) => {
     setShowAssign(studentId);
-    const allUsers = users.filter((u) => u.role === 'mentor');
+    const allUsers = users.filter((entry) => entry.role === 'mentor');
     if (allUsers.length === 0) {
-      const { data } = await (await import('../lib/axios')).default.get('/users', { params: { role: 'mentor' } });
+      const { data } = await api.get('/users', { params: { role: 'mentor' } });
       setMentors(data.users);
     } else {
       setMentors(allUsers);
+    }
+  };
+
+  const openResetModal = (student) => {
+    setResetTarget(student);
+    setResetPassword(generatePassword());
+  };
+
+  const copyToClipboard = async (value) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success('Copied to clipboard');
+    } catch {
+      toast.error('Failed to copy');
     }
   };
 
@@ -34,12 +57,31 @@ export default function UsersPage() {
     if (!selectedMentor) return toast.error('Select a mentor');
     try {
       await assignMentor(showAssign, selectedMentor);
-      toast.success('Mentor assigned!');
+      toast.success('Mentor assigned');
       setShowAssign(null);
       setSelectedMentor('');
       fetchUsers({ search, role: roleFilter });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to assign');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetTarget) return;
+    if (resetPassword.trim().length < 6) {
+      return toast.error('Password must be at least 6 characters');
+    }
+
+    setSavingPassword(true);
+    try {
+      await resetStudentPassword(resetTarget._id, resetPassword);
+      toast.success(`Password updated for ${resetTarget.name}`);
+      setResetTarget(null);
+      setResetPassword(generatePassword());
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -58,9 +100,16 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {user?.role === 'mentor' ? 'My Students' : 'Users'}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {user?.role === 'mentor' ? 'My Students' : 'Users'}
+          </h1>
+          {user?.role === 'admin' && (
+            <p className="mt-1 text-sm text-gray-500">
+              Admin can reassign mentors and reset student passwords when they forget login access.
+            </p>
+          )}
+        </div>
       </div>
 
       {user?.role === 'admin' && (
@@ -93,34 +142,55 @@ export default function UsersPage() {
                 <th className="pb-3 font-medium">Name</th>
                 <th className="pb-3 font-medium">Email</th>
                 <th className="pb-3 font-medium">Role</th>
+                <th className="pb-3 font-medium">Internship</th>
                 <th className="pb-3 font-medium">Mentor</th>
                 <th className="pb-3 font-medium">Status</th>
                 {user?.role === 'admin' && <th className="pb-3 font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u._id} className="border-b last:border-0">
-                  <td className="py-3 font-medium text-gray-900">{u.name}</td>
-                  <td className="py-3 text-gray-500">{u.email}</td>
+              {users.map((entry) => (
+                <tr key={entry._id} className="border-b last:border-0">
+                  <td className="py-3 font-medium text-gray-900">{entry.name}</td>
+                  <td className="py-3 text-gray-500">{entry.email}</td>
                   <td className="py-3">
-                    <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100">{u.role}</span>
+                    <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100">
+                      {entry.role}
+                    </span>
                   </td>
-                  <td className="py-3 text-gray-500">{u.mentor?.name || '-'}</td>
+                  <td className="py-3 text-gray-500">{entry.internship?.title || '-'}</td>
+                  <td className="py-3 text-gray-500">{entry.mentor?.name || '-'}</td>
                   <td className="py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {u.isActive ? 'Active' : 'Inactive'}
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {entry.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   {user?.role === 'admin' && (
                     <td className="py-3">
                       <div className="flex gap-1">
-                        {u.role === 'student' && (
-                          <button onClick={() => openAssignModal(u._id)} className="text-primary-600 hover:bg-primary-50 p-1.5 rounded-lg" title="Assign Mentor">
-                            <UserCog size={16} />
-                          </button>
+                        {entry.role === 'student' && (
+                          <>
+                            <button
+                              onClick={() => openAssignModal(entry._id)}
+                              className="text-primary-600 hover:bg-primary-50 p-1.5 rounded-lg"
+                              title="Assign Mentor"
+                            >
+                              <UserCog size={16} />
+                            </button>
+                            <button
+                              onClick={() => openResetModal(entry)}
+                              className="text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg"
+                              title="Reset Password"
+                            >
+                              <KeyRound size={16} />
+                            </button>
+                          </>
                         )}
-                        <button onClick={() => handleDelete(u._id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg" title="Delete">
+                        <button
+                          onClick={() => handleDelete(entry._id)}
+                          className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
+                          title="Delete"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -139,12 +209,54 @@ export default function UsersPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Select Mentor</label>
             <select value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)} className="input-field">
               <option value="">Choose a mentor</option>
-              {mentors.map((m) => (
-                <option key={m._id} value={m._id}>{m.name} ({m.email})</option>
+              {mentors.map((mentor) => (
+                <option key={mentor._id} value={mentor._id}>
+                  {mentor.name} ({mentor.email})
+                </option>
               ))}
             </select>
           </div>
           <button onClick={handleAssign} className="btn-primary w-full">Assign</button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} title="Reset Student Password">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Set a new temporary password for <span className="font-semibold">{resetTarget?.name}</span> and share it securely.
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+            <div className="flex gap-2">
+              <input
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                className="input-field flex-1"
+                placeholder="Enter a temporary password"
+              />
+              <button
+                type="button"
+                onClick={() => setResetPassword(generatePassword())}
+                className="rounded-lg border border-gray-200 px-3 text-gray-600 hover:bg-gray-50"
+                title="Generate Password"
+              >
+                <RefreshCw size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(resetPassword)}
+                className="rounded-lg border border-gray-200 px-3 text-gray-600 hover:bg-gray-50"
+                title="Copy Password"
+              >
+                <Copy size={16} />
+              </button>
+            </div>
+          </div>
+
+          <button onClick={handleResetPassword} disabled={savingPassword} className="btn-primary w-full justify-center">
+            {savingPassword ? 'Updating...' : 'Update Password'}
+          </button>
         </div>
       </Modal>
     </div>

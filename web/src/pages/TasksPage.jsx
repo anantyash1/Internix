@@ -265,7 +265,7 @@ export default function TasksPage() {
   if (loading) return <LoadingSpinner label="Loading tasks…" />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 1900, margin: '0 auto', padding: '1rem' }}>
       {/* Header */}
       <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
