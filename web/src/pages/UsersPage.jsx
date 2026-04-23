@@ -14,7 +14,7 @@ function generatePassword(length = 10) {
 
 export default function UsersPage() {
   const user = useAuthStore((s) => s.user);
-  const { users, loading, fetchUsers, assignMentor, resetStudentPassword, deleteUser } = useUserStore();
+  const { users, loading, fetchUsers, assignMentor, resetUserPassword, deleteUser } = useUserStore();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showAssign, setShowAssign] = useState(null);
@@ -39,8 +39,8 @@ export default function UsersPage() {
     }
   };
 
-  const openResetModal = (student) => {
-    setResetTarget(student);
+  const openResetModal = (entry) => {
+    setResetTarget(entry);
     setResetPassword(generatePassword());
   };
 
@@ -74,7 +74,7 @@ export default function UsersPage() {
 
     setSavingPassword(true);
     try {
-      await resetStudentPassword(resetTarget._id, resetPassword);
+      await resetUserPassword(resetTarget._id, resetPassword);
       toast.success(`Password updated for ${resetTarget.name}`);
       setResetTarget(null);
       setResetPassword(generatePassword());
@@ -106,7 +106,7 @@ export default function UsersPage() {
           </h1>
           {user?.role === 'admin' && (
             <p className="mt-1 text-sm text-gray-500">
-              Admin can reassign mentors and reset student passwords when they forget login access.
+              Admin can reassign mentors and reset student or mentor passwords when they forget login access.
             </p>
           )}
         </div>
@@ -177,14 +177,16 @@ export default function UsersPage() {
                             >
                               <UserCog size={16} />
                             </button>
-                            <button
-                              onClick={() => openResetModal(entry)}
-                              className="text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg"
-                              title="Reset Password"
-                            >
-                              <KeyRound size={16} />
-                            </button>
                           </>
+                        )}
+                        {(entry.role === 'student' || entry.role === 'mentor') && (
+                          <button
+                            onClick={() => openResetModal(entry)}
+                            className="text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg"
+                            title="Reset Password"
+                          >
+                            <KeyRound size={16} />
+                          </button>
                         )}
                         <button
                           onClick={() => handleDelete(entry._id)}
@@ -220,10 +222,10 @@ export default function UsersPage() {
         </div>
       </Modal>
 
-      <Modal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} title="Reset Student Password">
+      <Modal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} title="Reset Password">
         <div className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Set a new temporary password for <span className="font-semibold">{resetTarget?.name}</span> and share it securely.
+            Set a new temporary password for <span className="font-semibold">{resetTarget?.name}</span> ({resetTarget?.role}) and share it securely.
           </div>
 
           <div>

@@ -261,10 +261,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import useAuthStore from '../store/authStore';
+import NoticeBoard from './NoticeBoard';
 import {
   LayoutDashboard, ListTodo, CalendarCheck, FileText,
   Users, Briefcase, Award, Play, Sparkles, ChevronRight,
   Settings, UserPlus, ClipboardList,
+  LucideSquareSlash,
 } from 'lucide-react';
 
 const navGroups = {
@@ -277,11 +279,13 @@ const navGroups = {
       { to: '/internships',  icon: Briefcase,      label: 'Internships' },
       { to: '/onboarding',   icon: UserPlus,       label: 'Onboarding' },
       { to: '/certificates', icon: Award,          label: 'Certificates' },
+      { to: '/groups',       icon: Users,         label: 'Groups' },
     ]},
     { label: 'Activity', items: [
       { to: '/tasks',      icon: ListTodo,       label: 'Tasks' },
       { to: '/attendance', icon: CalendarCheck,  label: 'Attendance' },
       { to: '/reports',    icon: FileText,       label: 'Reports' },
+      { to: '/notices',    icon: LucideSquareSlash,           label: 'Notices' },
       { to: '/videos',     icon: Play,           label: 'Videos' },
       { to: '/tests',      icon: ClipboardList,  label: 'Tests', badge: 'New' },
     ]},
@@ -300,6 +304,7 @@ const navGroups = {
       { to: '/users',       icon: Users,     label: 'Students' },
       { to: '/internships', icon: Briefcase, label: 'Internships' },
       { to: '/onboarding',  icon: UserPlus,  label: 'Onboarding' },
+      { to: '/groups', icon: Users, label: 'Groups' },
     ]},
     { label: 'Activity', items: [
       { to: '/tasks',      icon: ListTodo,      label: 'Tasks' },
@@ -478,11 +483,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {/* Notice Board — always visible */}
+      <NoticeBoard />
+
       {/* User badge */}
-      <div style={{
-        padding: '0.75rem',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-      }}>
+      <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '0.625rem',
           padding: '0.625rem 0.75rem',
@@ -508,7 +513,7 @@ export default function Sidebar() {
               {user?.name}
             </div>
             <div style={{
-              fontSize: '0.625rem', color: 'rgba(255,255,255,0.35)',
+              fontSize: '0.5625rem', color: 'rgba(255,255,255,0.35)',
               textTransform: 'capitalize', letterSpacing: '0.04em', fontWeight: 600,
             }}>
               {user?.role}

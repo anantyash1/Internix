@@ -24,7 +24,7 @@ const useUserStore = create((set, get) => ({
     return data;
   },
 
-  resetStudentPassword: async (id, newPassword) => {
+  resetUserPassword: async (id, newPassword) => {
     const { data } = await api.put(`/users/${id}/reset-password`, { newPassword });
     return data;
   },

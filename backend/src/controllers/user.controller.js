@@ -106,7 +106,7 @@ async function assignMentor(req, res, next) {
   }
 }
 
-async function resetStudentPassword(req, res, next) {
+async function resetUserPassword(req, res, next) {
   try {
     const { newPassword } = req.body;
 
@@ -119,14 +119,14 @@ async function resetStudentPassword(req, res, next) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.role !== 'student') {
-      return res.status(400).json({ message: 'Only student passwords can be reset here' });
+    if (!['student', 'mentor'].includes(user.role)) {
+      return res.status(400).json({ message: 'Only student and mentor passwords can be reset here' });
     }
 
     user.password = newPassword.trim();
     await user.save();
 
-    res.json({ message: 'Student password updated successfully' });
+    res.json({ message: `${user.role} password updated successfully` });
   } catch (error) {
     next(error);
   }
@@ -151,6 +151,6 @@ module.exports = {
   getUserById,
   updateUser,
   assignMentor,
-  resetStudentPassword,
+  resetUserPassword,
   deleteUser,
 };
