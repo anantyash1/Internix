@@ -237,8 +237,12 @@ const markAttendance = async (req, res, next) => {
     let checkInPhotoPublicId = null;
 
     if (req.file) {
-      checkInPhotoUrl = req.file.path;
-      checkInPhotoPublicId = req.file.filename;
+      try {
+        checkInPhotoUrl = req.file.path;
+        checkInPhotoPublicId = req.file.filename;
+      } catch (err) {
+        console.error('File upload error:', err);
+      }
     }
 
     if (schedule.requirePhoto && !checkInPhotoUrl && !existing) {
@@ -258,8 +262,12 @@ const markAttendance = async (req, res, next) => {
       let checkOutPhotoPublicId = existing.checkOutPhotoPublicId;
 
       if (req.file) {
-        checkOutPhotoUrl = req.file.path;
-        checkOutPhotoPublicId = req.file.filename;
+        try {
+          checkOutPhotoUrl = req.file.path;
+          checkOutPhotoPublicId = req.file.filename;
+        } catch (err) {
+          console.error('File upload error:', err);
+        }
       }
 
       if (schedule.requirePhoto && !checkOutPhotoUrl) {

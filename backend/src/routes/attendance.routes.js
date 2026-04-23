@@ -25,6 +25,21 @@ const {
 const { protect, authorize } = require('../middleware/auth.middleware');
 const { uploadAttendancePhoto } = require('../config/cloudinary');
 
+// Optional photo upload middleware wrapper
+const optionalPhotoUpload = (req, res, next) => {
+  uploadAttendancePhoto.single('photo')(req, res, (err) => {
+    // Ignore multer errors for optional field - just continue
+    if (err && err.message && err.message.includes('Only image files')) {
+      return res.status(400).json({ message: err.message });
+    }
+    // Ignore "LIMIT_FILE_SIZE" and other non-critical errors
+    if (err && err.code !== 'LIMIT_FILE_SIZE') {
+      console.warn('Photo upload warning:', err.message);
+    }
+    next();
+  });
+};
+
 router.use(protect);
 
 // Student routes
@@ -35,7 +50,7 @@ router.get('/today-schedule', getTodaySchedule);
 router.post(
   '/',
   authorize('student'),
-  uploadAttendancePhoto.single('photo'),
+  optionalPhotoUpload,
   markAttendance
 );
 

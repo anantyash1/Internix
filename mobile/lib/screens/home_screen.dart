@@ -23,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final role = auth.role;
-    final userName = auth.user?['name']?.split(' ').first ?? 'User';
 
     // ── Build screen list based on role ───────────────────────────────
     final screens = <_NavItem>[
@@ -126,6 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
+        labelBehavior: screens.length > 5
+            ? NavigationDestinationLabelBehavior.onlyShowSelected
+            : NavigationDestinationLabelBehavior.alwaysShow,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: screens
             .map((item) => NavigationDestination(

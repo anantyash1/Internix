@@ -4,9 +4,11 @@ import '../services/api_service.dart';
 class VideoProvider extends ChangeNotifier {
   List<dynamic> _videos = [];
   bool _loading = false;
+  String? _error;
 
   List<dynamic> get videos => _videos;
   bool get loading => _loading;
+  String? get error => _error;
 
   int get completedCount =>
       _videos.where((v) => v['progress']?['completed'] == true).length;
@@ -16,11 +18,14 @@ class VideoProvider extends ChangeNotifier {
 
   Future<void> fetchVideos() async {
     _loading = true;
+    _error = null;
     notifyListeners();
     try {
       final data = await ApiService.get('/videos');
       _videos = data['videos'] ?? [];
-    } catch (_) {}
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+    }
     _loading = false;
     notifyListeners();
   }
@@ -43,7 +48,9 @@ class VideoProvider extends ChangeNotifier {
         notifyListeners();
       }
       return data['progress'] as Map<String, dynamic>?;
-    } catch (_) {
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
       return null;
     }
   }

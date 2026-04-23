@@ -99,9 +99,8 @@
 //   }
 // }
 
-
-
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -110,6 +109,7 @@ import '../config/api_config.dart';
 class ApiService {
   static const _storage = FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
+  static const Duration _requestTimeout = Duration(seconds: 30);
 
   static Future<String?> getToken() async {
     return await _storage.read(key: _tokenKey);
@@ -133,38 +133,79 @@ class ApiService {
 
   static Future<Map<String, dynamic>> get(String endpoint,
       {Map<String, String>? queryParams}) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}$endpoint')
-        .replace(queryParameters: queryParams);
-    final response = await http.get(uri, headers: await _headers());
-    return _handleResponse(response);
+    try {
+      final response = await http
+          .get(
+            ApiConfig.apiUri(endpoint, queryParams: queryParams),
+            headers: await _headers(),
+          )
+          .timeout(_requestTimeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception(
+        'Unable to connect to server. Verify API URL: ${ApiConfig.baseUrl}',
+      );
+    } on TimeoutException {
+      throw Exception('Request timed out. Please try again.');
+    }
   }
 
   static Future<Map<String, dynamic>> post(String endpoint,
       {Map<String, dynamic>? body}) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-      headers: await _headers(),
-      body: body != null ? jsonEncode(body) : null,
-    );
-    return _handleResponse(response);
+    try {
+      final response = await http
+          .post(
+            ApiConfig.apiUri(endpoint),
+            headers: await _headers(),
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(_requestTimeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception(
+        'Unable to connect to server. Verify API URL: ${ApiConfig.baseUrl}',
+      );
+    } on TimeoutException {
+      throw Exception('Request timed out. Please try again.');
+    }
   }
 
   static Future<Map<String, dynamic>> put(String endpoint,
       {Map<String, dynamic>? body}) async {
-    final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-      headers: await _headers(),
-      body: body != null ? jsonEncode(body) : null,
-    );
-    return _handleResponse(response);
+    try {
+      final response = await http
+          .put(
+            ApiConfig.apiUri(endpoint),
+            headers: await _headers(),
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(_requestTimeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception(
+        'Unable to connect to server. Verify API URL: ${ApiConfig.baseUrl}',
+      );
+    } on TimeoutException {
+      throw Exception('Request timed out. Please try again.');
+    }
   }
 
   static Future<Map<String, dynamic>> delete(String endpoint) async {
-    final response = await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-      headers: await _headers(),
-    );
-    return _handleResponse(response);
+    try {
+      final response = await http
+          .delete(
+            ApiConfig.apiUri(endpoint),
+            headers: await _headers(),
+          )
+          .timeout(_requestTimeout);
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception(
+        'Unable to connect to server. Verify API URL: ${ApiConfig.baseUrl}',
+      );
+    } on TimeoutException {
+      throw Exception('Request timed out. Please try again.');
+    }
   }
 
   /// Upload a file with additional fields.
@@ -175,39 +216,77 @@ class ApiService {
     Map<String, String> fields, {
     String fieldName = 'file',
   }) async {
-    final token = await getToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-    );
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await getToken();
+      final request = http.MultipartRequest(
+        'POST',
+        ApiConfig.apiUri(endpoint),
+      );
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.fields.addAll(fields);
+      request.files.add(
+        await http.MultipartFile.fromPath(fieldName, file.path),
+      );
+      final streamedResponse = await request.send().timeout(_requestTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception(
+        'Unable to connect to server. Verify API URL: ${ApiConfig.baseUrl}',
+      );
+    } on TimeoutException {
+      throw Exception('Upload timed out. Please try again.');
     }
-    request.fields.addAll(fields);
-    request.files.add(
-      await http.MultipartFile.fromPath(fieldName, file.path),
-    );
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    return _handleResponse(response);
   }
 
   static Future<List<int>> downloadBytes(String endpoint) async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}$endpoint'),
-      headers: await _headers(),
-    );
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response.bodyBytes;
-    }
-    throw Exception('Download failed: ${response.statusCode}');
+    final response = await http
+        .get(
+          ApiConfig.apiUri(endpoint),
+          headers: await _headers(),
+        )
+        .timeout(_requestTimeout);
+    return _extractBytesOrThrow(response);
+  }
+
+  static Future<List<int>> downloadBytesFromUrl(
+    String pathOrUrl, {
+    bool authenticated = false,
+  }) async {
+    final response = await http
+        .get(
+          ApiConfig.resolveUri(pathOrUrl),
+          headers: authenticated ? await _headers() : null,
+        )
+        .timeout(_requestTimeout);
+    return _extractBytesOrThrow(response);
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
-    final body = jsonDecode(response.body);
+    dynamic body;
+    if (response.body.isNotEmpty) {
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        body = response.body;
+      }
+    }
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body is Map<String, dynamic> ? body : {'data': body};
     }
-    throw Exception(body['message'] ?? 'Request failed');
+
+    final message =
+        body is Map<String, dynamic> ? body['message']?.toString() : null;
+    throw Exception(message ?? 'Request failed (${response.statusCode})');
+  }
+
+  static List<int> _extractBytesOrThrow(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+    throw Exception('Download failed (${response.statusCode})');
   }
 }

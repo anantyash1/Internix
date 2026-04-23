@@ -40,6 +40,12 @@ const uploadAttendancePhoto = multer({
   storage: attendancePhotoStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (_req, file, cb) => {
+    // Allow if no file (optional upload)
+    if (!file) {
+      cb(null, true);
+      return;
+    }
+    // Validate file type if present
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {

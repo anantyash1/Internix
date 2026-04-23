@@ -42,9 +42,6 @@
 //   }
 // }
 
-
-
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -71,34 +68,44 @@ class AttendanceProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
     try {
-      // Fetch attendance records and today's schedule in parallel
-      final results = await Future.wait([
-        ApiService.get('/attendance'),
-        ApiService.get('/attendance/today-schedule'),
-      ]);
-
-      _records = results[0]['records'] ?? [];
-      _schedule = results[1]['schedule'];
-      _isWorkingDay = results[1]['isWorkingDay'] ?? true;
-      _todayRecord = results[1]['todayRecord'];
+      final attendanceData = await ApiService.get('/attendance');
+      _records = attendanceData['records'] ?? [];
     } catch (e) {
       debugPrint('Attendance fetch error: $e');
     }
+
+    // Keep this optional so records still load even when schedule endpoint fails.
+    try {
+      final scheduleData = await ApiService.get('/attendance/today-schedule');
+      _schedule = scheduleData['schedule'];
+      _isWorkingDay = scheduleData['isWorkingDay'] ?? true;
+      _todayRecord = scheduleData['todayRecord'];
+    } catch (e) {
+      debugPrint('Attendance schedule fetch error: $e');
+      _schedule = null;
+      _isWorkingDay = true;
+      _todayRecord = null;
+    }
+
     _loading = false;
     notifyListeners();
   }
 
-  /// [photoFile] is the captured selfie image
-  Future<Map<String, dynamic>> checkIn(File photoFile) async {
+  /// [photoFile] is the captured selfie image (can be null)
+  Future<Map<String, dynamic>> checkIn(File? photoFile) async {
     _submitting = true;
     notifyListeners();
     try {
-      final data = await ApiService.uploadFile(
-        '/attendance',
-        photoFile,
-        {'status': 'present'},
-        fieldName: 'photo',
-      );
+      // Only use uploadFile if we have a real photo file
+      final data = photoFile != null && photoFile.path.isNotEmpty
+          ? await ApiService.uploadFile(
+              '/attendance',
+              photoFile,
+              {'status': 'present'},
+              fieldName: 'photo',
+            )
+          : await ApiService.post('/attendance', body: {'status': 'present'});
+
       await fetchAttendance();
       _submitting = false;
       notifyListeners();
@@ -106,20 +113,24 @@ class AttendanceProvider extends ChangeNotifier {
     } catch (e) {
       _submitting = false;
       notifyListeners();
-      return {'success': false, 'message': e.toString().replaceFirst('Exception: ', '')};
+      return {'success': false, 'message': _cleanError(e)};
     }
   }
 
-  Future<Map<String, dynamic>> checkOut(File photoFile) async {
+  Future<Map<String, dynamic>> checkOut(File? photoFile) async {
     _submitting = true;
     notifyListeners();
     try {
-      final data = await ApiService.uploadFile(
-        '/attendance',
-        photoFile,
-        {},
-        fieldName: 'photo',
-      );
+      // Only use uploadFile if we have a real photo file
+      final data = photoFile != null && photoFile.path.isNotEmpty
+          ? await ApiService.uploadFile(
+              '/attendance',
+              photoFile,
+              {},
+              fieldName: 'photo',
+            )
+          : await ApiService.post('/attendance', body: {});
+
       await fetchAttendance();
       _submitting = false;
       notifyListeners();
@@ -127,7 +138,11 @@ class AttendanceProvider extends ChangeNotifier {
     } catch (e) {
       _submitting = false;
       notifyListeners();
-      return {'success': false, 'message': e.toString().replaceFirst('Exception: ', '')};
+      return {'success': false, 'message': _cleanError(e)};
     }
+  }
+
+  String _cleanError(Object error) {
+    return error.toString().replaceFirst('Exception: ', '');
   }
 }

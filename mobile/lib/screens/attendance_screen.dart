@@ -158,15 +158,11 @@
 //   }
 // }
 
-
-
-
-
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../providers/attendance_provider.dart';
 
@@ -183,9 +179,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<AttendanceProvider>(context, listen: false)
-            .fetchAttendance());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Provider.of<AttendanceProvider>(context, listen: false).fetchAttendance();
+    });
   }
 
   Color _statusColor(String status) {
@@ -225,8 +222,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _handleCheckIn() async {
-    final schedule =
-        Provider.of<AttendanceProvider>(context, listen: false).schedule;
+    final provider = Provider.of<AttendanceProvider>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final schedule = provider.schedule;
     final requirePhoto = schedule?['requirePhoto'] ?? true;
 
     File? photoFile;
@@ -248,30 +246,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       if (!confirmed) return;
     }
 
-    final provider =
-        Provider.of<AttendanceProvider>(context, listen: false);
-    final result = await provider.checkIn(photoFile ?? File(''));
+    final result = await provider.checkIn(photoFile);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result['message'] ?? 'Done'),
-        backgroundColor:
-            result['success'] == true ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(
+      content: Text(result['message'] ?? 'Done'),
+      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   Future<void> _handleCheckOut() async {
-    final schedule =
-        Provider.of<AttendanceProvider>(context, listen: false).schedule;
+    final provider = Provider.of<AttendanceProvider>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final schedule = provider.schedule;
     final requirePhoto = schedule?['requirePhoto'] ?? true;
 
     File? photoFile;
 
     if (requirePhoto) {
-      final proceed =
-          await _showPhotoInstructionDialog('Check Out');
+      final proceed = await _showPhotoInstructionDialog('Check Out');
       if (!proceed) return;
 
       photoFile = await _captureSelfie();
@@ -281,23 +275,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     if (!mounted) return;
 
     if (photoFile != null) {
-      final confirmed =
-          await _showPhotoPreviewDialog(photoFile, 'Check Out');
+      final confirmed = await _showPhotoPreviewDialog(photoFile, 'Check Out');
       if (!confirmed) return;
     }
 
-    final provider =
-        Provider.of<AttendanceProvider>(context, listen: false);
-    final result = await provider.checkOut(photoFile ?? File(''));
+    final result = await provider.checkOut(photoFile);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result['message'] ?? 'Done'),
-        backgroundColor:
-            result['success'] == true ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
-    }
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(
+      content: Text(result['message'] ?? 'Done'),
+      backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   /// Dialog to explain photo requirement
@@ -473,9 +462,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${schedule['startTime']} – ${schedule['endTime']} '
-                      '· ${(schedule['workingDays'] as List?)?.join(', ') ?? ''}'
-                      '${schedule['requirePhoto'] == true ? ' · 📷 Photo required' : ''}',
+                      _scheduleSummary(schedule),
                       style: const TextStyle(
                           fontSize: 12, color: Color(0xFF1E40AF)),
                     ),
@@ -565,12 +552,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       Row(
                         children: [
                           if (todayRecord['checkInPhoto'] != null)
-                            _buildPhotoThumb(
-                                todayRecord['checkInPhoto'], 'In', Colors.green),
+                            _buildPhotoThumb(todayRecord['checkInPhoto'], 'In',
+                                Colors.green),
                           if (todayRecord['checkOutPhoto'] != null) ...[
                             const SizedBox(width: 8),
-                            _buildPhotoThumb(
-                                todayRecord['checkOutPhoto'], 'Out', Colors.orange),
+                            _buildPhotoThumb(todayRecord['checkOutPhoto'],
+                                'Out', Colors.orange),
                           ],
                         ],
                       ),
@@ -583,9 +570,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: attendance.submitting
-                              ? null
-                              : _handleCheckIn,
+                          onPressed:
+                              attendance.submitting ? null : _handleCheckIn,
                           icon: attendance.submitting
                               ? const SizedBox(
                                   width: 16,
@@ -610,14 +596,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: attendance.submitting
-                              ? null
-                              : _handleCheckOut,
+                          onPressed:
+                              attendance.submitting ? null : _handleCheckOut,
                           icon: attendance.submitting
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.logout, size: 18),
                           label: Text(attendance.submitting
@@ -678,8 +664,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         size: 48, color: Colors.grey[300]),
                     const SizedBox(height: 8),
                     Text('No records found',
-                        style: TextStyle(
-                            color: Colors.grey[400], fontSize: 14)),
+                        style:
+                            TextStyle(color: Colors.grey[400], fontSize: 14)),
                   ],
                 ),
               ),
@@ -687,8 +673,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           else
             ...attendance.records.map((record) {
               final status = record['status'] ?? 'absent';
-              final date =
-                  record['date']?.toString().substring(0, 10) ?? '';
+              final date = record['date']?.toString().substring(0, 10) ?? '';
               final hasPhoto = record['checkInPhoto'] != null;
 
               return Card(
@@ -705,7 +690,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       // Status indicator
                       CircleAvatar(
                         backgroundColor:
-                            _statusColor(status).withOpacity(0.1),
+                            _statusColor(status).withValues(alpha: 0.1),
                         child: Icon(
                           status == 'present'
                               ? Icons.check
@@ -723,18 +708,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           children: [
                             Text(date,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14)),
+                                    fontWeight: FontWeight.w600, fontSize: 14)),
                             if (record['checkInTime'] != null)
                               Text(
                                 'In: ${record['checkInTime']}'
                                 '${record['checkOutTime'] != null ? '  Out: ${record['checkOutTime']}' : ''}',
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600),
+                                    fontSize: 12, color: Colors.grey.shade600),
                               ),
-                            if (role != 'student' &&
-                                record['student'] != null)
+                            if (role != 'student' && record['student'] != null)
                               Text(record['student']['name'] ?? '',
                                   style: TextStyle(
                                       fontSize: 12,
@@ -750,7 +732,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color:
-                                  _statusColor(status).withOpacity(0.1),
+                                  _statusColor(status).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -769,8 +751,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.camera_alt,
-                                      size: 10,
-                                      color: Colors.grey.shade400),
+                                      size: 10, color: Colors.grey.shade400),
                                   Text(' photo',
                                       style: TextStyle(
                                           fontSize: 10,
@@ -791,12 +772,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Widget _buildPhotoThumb(String url, String label, Color borderColor) {
+    final resolvedUrl = ApiConfig.resolveUri(url).toString();
     return Column(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
-            url,
+            resolvedUrl,
             width: 60,
             height: 60,
             fit: BoxFit.cover,
@@ -810,8 +792,25 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         ),
         const SizedBox(height: 2),
         Text(label,
-            style: TextStyle(fontSize: 10, color: borderColor, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                fontSize: 10, color: borderColor, fontWeight: FontWeight.w600)),
       ],
     );
+  }
+
+  String _scheduleSummary(Map<String, dynamic> schedule) {
+    final startTime = schedule['startTime']?.toString() ?? '--:--';
+    final endTime = schedule['endTime']?.toString() ?? '--:--';
+    final workingDays = (schedule['workingDays'] as List?)
+            ?.map((day) => day.toString())
+            .toList() ??
+        const <String>[];
+    final requirePhoto = schedule['requirePhoto'] == true;
+
+    final dayText =
+        workingDays.isEmpty ? 'No working days set' : workingDays.join(', ');
+    final photoText = requirePhoto ? ' | Photo required' : '';
+
+    return '$startTime - $endTime | $dayText$photoText';
   }
 }
