@@ -45,11 +45,21 @@ const uploadAttendancePhoto = multer({
       cb(null, true);
       return;
     }
-    // Validate file type if present
-    if (file.mimetype.startsWith('image/')) {
+    // List of allowed MIME types and extensions
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    
+    const fileExt = file.originalname.toLowerCase().match(/\.\w+$/)?.[0] || '';
+    const isValidMime = allowedMimes.includes(file.mimetype);
+    const isValidExt = allowedExts.includes(fileExt);
+    
+    // Log for debugging
+    console.log(`Photo upload: filename=${file.originalname}, mimetype=${file.mimetype}, ext=${fileExt}, validMime=${isValidMime}, validExt=${isValidExt}`);
+    
+    if (isValidMime || isValidExt) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed for attendance photos'), false);
+      cb(new Error(`Only image files are allowed (JPEG, PNG, WebP). Received: ${file.mimetype || 'unknown'}`), false);
     }
   },
 });

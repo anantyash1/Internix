@@ -19,16 +19,13 @@ class TestQuestion {
   });
 
   factory TestQuestion.fromJson(Map<String, dynamic> json) => TestQuestion(
-        id: json['_id'] ?? '',
-        questionText: json['questionText'] ?? '',
-        type: json['type'] ?? 'mcq',
-        options: json['options'] != null
-            ? Map<String, String>.from(
-                json['options'].map((k, v) => MapEntry(k, v?.toString() ?? '')))
-            : {},
-        points: json['points'] ?? 1,
-        order: json['order'] ?? 0,
-      );
+    id: json['_id'] ?? '',
+    questionText: json['questionText'] ?? '',
+    type: json['type'] ?? 'mcq',
+    options: json['options'] != null ? Map<String, String>.from(json['options'].map((k, v) => MapEntry(k, v?.toString() ?? ''))) : {},
+    points: json['points'] ?? 1,
+    order: json['order'] ?? 0,
+  );
 }
 
 class TestModel {
@@ -61,24 +58,21 @@ class TestModel {
   });
 
   factory TestModel.fromJson(Map<String, dynamic> json) => TestModel(
-        id: json['_id'] ?? '',
-        title: json['title'] ?? '',
-        description: json['description'] ?? '',
-        instructions: json['instructions'] ?? '',
-        duration: json['duration'] ?? 30,
-        totalPoints: json['totalPoints'] ?? 0,
-        status: json['status'] ?? 'draft',
-        dueDate: json['dueDate'],
-        passingScore: json['passingScore'] ?? 60,
-        showResultsToStudent: json['showResultsToStudent'] != false,
-        questions: (json['questions'] as List? ?? [])
-            .map((q) => TestQuestion.fromJson(q))
-            .toList(),
-        mySubmission: json['mySubmission'],
-      );
+    id: json['_id'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    instructions: json['instructions'] ?? '',
+    duration: json['duration'] ?? 30,
+    totalPoints: json['totalPoints'] ?? 0,
+    status: json['status'] ?? 'draft',
+    dueDate: json['dueDate'],
+    passingScore: json['passingScore'] ?? 60,
+    showResultsToStudent: json['showResultsToStudent'] != false,
+    questions: (json['questions'] as List? ?? []).map((q) => TestQuestion.fromJson(q)).toList(),
+    mySubmission: json['mySubmission'],
+  );
 
-  bool get isOverdue =>
-      dueDate != null && DateTime.now().isAfter(DateTime.parse(dueDate!));
+  bool get isOverdue => dueDate != null && DateTime.now().isAfter(DateTime.parse(dueDate!));
 }
 
 class TestProvider extends ChangeNotifier {
@@ -118,9 +112,7 @@ class TestProvider extends ChangeNotifier {
     _submitting = true;
     notifyListeners();
     try {
-      final answerList = answers.entries
-          .map((e) => {'questionId': e.key, 'answer': e.value})
-          .toList();
+      final answerList = answers.entries.map((e) => {'questionId': e.key, 'answer': e.value}).toList();
       final data = await ApiService.post('/tests/$testId/submit', body: {
         'answers': answerList,
         'timeTakenSeconds': timeTakenSeconds,

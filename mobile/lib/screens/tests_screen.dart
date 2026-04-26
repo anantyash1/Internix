@@ -15,20 +15,16 @@ class _TestsScreenState extends State<TestsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-        () => Provider.of<TestProvider>(context, listen: false).fetchTests());
+    Future.microtask(() =>
+        Provider.of<TestProvider>(context, listen: false).fetchTests());
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'active':
-        return Colors.green;
-      case 'draft':
-        return Colors.grey;
-      case 'closed':
-        return Colors.red;
-      default:
-        return Colors.grey;
+      case 'active': return Colors.green;
+      case 'draft': return Colors.grey;
+      case 'closed': return Colors.red;
+      default: return Colors.grey;
     }
   }
 
@@ -58,9 +54,7 @@ class _TestsScreenState extends State<TestsScreen> {
                   Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 8),
                   Text(
-                    role == 'student'
-                        ? 'No tests assigned yet'
-                        : 'No tests created yet',
+                    role == 'student' ? 'No tests assigned yet' : 'No tests created yet',
                     style: TextStyle(color: Colors.grey[400], fontSize: 16),
                   ),
                 ],
@@ -73,10 +67,8 @@ class _TestsScreenState extends State<TestsScreen> {
                 final test = testProvider.tests[index];
                 final mySub = test.mySubmission;
                 final hasSubmitted = mySub != null &&
-                    (mySub['status'] == 'submitted' ||
-                        mySub['status'] == 'reviewed');
-                final inProgress =
-                    mySub != null && mySub['status'] == 'in_progress';
+                    (mySub['status'] == 'submitted' || mySub['status'] == 'reviewed');
+                final inProgress = mySub != null && mySub['status'] == 'in_progress';
                 final isOverdue = test.isOverdue;
 
                 return Card(
@@ -108,8 +100,7 @@ class _TestsScreenState extends State<TestsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color:
-                                    _statusColor(test.status).withOpacity(0.1),
+                                color: _statusColor(test.status).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -139,13 +130,10 @@ class _TestsScreenState extends State<TestsScreen> {
                           runSpacing: 4,
                           children: [
                             _chip(Icons.timer_outlined, '${test.duration} min'),
-                            _chip(Icons.quiz_outlined,
-                                '${test.questions.length} Qs'),
-                            _chip(
-                                Icons.star_outline, '${test.totalPoints} pts'),
+                            _chip(Icons.quiz_outlined, '${test.questions.length} Qs'),
+                            _chip(Icons.star_outline, '${test.totalPoints} pts'),
                             if (test.passingScore > 0)
-                              _chip(Icons.check_circle_outline,
-                                  'Pass: ${test.passingScore}%'),
+                              _chip(Icons.check_circle_outline, 'Pass: ${test.passingScore}%'),
                             if (test.dueDate != null)
                               _chip(
                                 Icons.calendar_today,
@@ -212,33 +200,25 @@ class _TestsScreenState extends State<TestsScreen> {
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 8),
-                                    textStyle: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600),
+                                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                   ),
                                 ),
-                              if (!hasSubmitted &&
-                                  test.status == 'active' &&
-                                  !isOverdue) ...[
+                              if (!hasSubmitted && test.status == 'active' && !isOverdue) ...[
                                 const SizedBox(width: 8),
                                 ElevatedButton.icon(
                                   onPressed: () => _startTest(context, test),
                                   icon: Icon(
-                                    inProgress
-                                        ? Icons.play_arrow
-                                        : Icons.play_circle,
+                                    inProgress ? Icons.play_arrow : Icons.play_circle,
                                     size: 16,
                                   ),
-                                  label: Text(
-                                      inProgress ? 'Resume' : 'Start Test'),
+                                  label: Text(inProgress ? 'Resume' : 'Start Test'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF2563EB),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 8),
                                     textStyle: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700),
+                                        fontSize: 12, fontWeight: FontWeight.w700),
                                     shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8)),
                                   ),
@@ -259,9 +239,7 @@ class _TestsScreenState extends State<TestsScreen> {
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 8),
-                                  textStyle: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600),
+                                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ),
                           ],
@@ -275,8 +253,7 @@ class _TestsScreenState extends State<TestsScreen> {
     );
   }
 
-  Widget _chip(IconData icon, String label,
-      {Color color = const Color(0xFF64748B)}) {
+  Widget _chip(IconData icon, String label, {Color color = const Color(0xFF64748B)}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -397,8 +374,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
   void initState() {
     super.initState();
     _startTime = DateTime.now().millisecondsSinceEpoch;
-    final startedAt = DateTime.parse(
-        widget.submission['startedAt'] ?? DateTime.now().toIso8601String());
+    final startedAt = DateTime.parse(widget.submission['startedAt'] ?? DateTime.now().toIso8601String());
     final elapsed = DateTime.now().difference(startedAt).inSeconds;
     final duration = (widget.testData['duration'] as int? ?? 30) * 60;
     _timeLeft = (duration - elapsed).clamp(0, duration);
@@ -447,17 +423,12 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Submit Test'),
-          content: const Text(
-              'Are you sure you want to submit? This cannot be undone.'),
+          content: const Text('Are you sure you want to submit? This cannot be undone.'),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
               child: const Text('Submit'),
             ),
           ],
@@ -470,8 +441,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     _timer?.cancel();
 
     try {
-      final timeTaken =
-          (DateTime.now().millisecondsSinceEpoch - _startTime) ~/ 1000;
+      final timeTaken = (DateTime.now().millisecondsSinceEpoch - _startTime) ~/ 1000;
       await widget.testProvider.submitTest(
         widget.testData['_id'] as String,
         _answers,
@@ -480,24 +450,12 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
       );
 
       if (!mounted) return;
-      final sub = widget.testProvider.tests
-          .firstWhere(
-            (t) => t.id == widget.testData['_id'],
-            orElse: () => TestModel(
-                id: '',
-                title: '',
-                description: '',
-                instructions: '',
-                duration: 0,
-                totalPoints: 0,
-                status: '',
-                passingScore: 0,
-                showResultsToStudent: false,
-                questions: []),
-          )
-          .mySubmission;
+      final sub = widget.testProvider.tests.firstWhere(
+        (t) => t.id == widget.testData['_id'],
+        orElse: () => TestModel(id: '', title: '', description: '', instructions: '', duration: 0, totalPoints: 0, status: '', passingScore: 0, showResultsToStudent: false, questions: []),
+      ).mySubmission;
 
-      _showResultDialog(sub, autoSubmit: autoSubmit);
+      _showResultDialog(sub);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -509,10 +467,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     }
   }
 
-  void _showResultDialog(
-    Map<String, dynamic>? sub, {
-    required bool autoSubmit,
-  }) {
+  void _showResultDialog(Map<String, dynamic>? sub) {
     final pct = sub?['percentage'] ?? 0;
     final score = sub?['score'] ?? 0;
     final total = sub?['totalPoints'] ?? (widget.testData['totalPoints'] ?? 0);
@@ -527,47 +482,26 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         title: Row(
           children: [
             Icon(
-              (passed == true || pct >= passingScore)
-                  ? Icons.emoji_events
-                  : Icons.info_outline,
-              color: (passed == true || pct >= passingScore)
-                  ? Colors.amber
-                  : Colors.orange,
+              (passed == true || pct >= passingScore) ? Icons.emoji_events : Icons.info_outline,
+              color: (passed == true || pct >= passingScore) ? Colors.amber : Colors.orange,
               size: 28,
             ),
             const SizedBox(width: 8),
-            Text(autoSubmit ? 'Auto Submitted!' : 'Test Submitted!',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(autoSubmit ? 'Auto Submitted!' : 'Test Submitted!', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('$score / $total',
-                style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1)),
-            Text('$pct%',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: (passed == true || pct >= passingScore)
-                        ? Colors.green
-                        : Colors.red)),
+            Text('$score / $total', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1)),
+            Text('$pct%', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: (passed == true || pct >= passingScore) ? Colors.green : Colors.red)),
             const SizedBox(height: 8),
             if (passed == true || pct >= passingScore)
-              const Text('Passed!',
-                  style: TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.w700))
+              const Text('🎉 Passed!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700))
             else if (passed == false)
-              Text('Passing score: $passingScore%',
-                  style: const TextStyle(color: Colors.orange, fontSize: 13))
+              Text('Passing score: $passingScore%', style: const TextStyle(color: Colors.orange, fontSize: 13))
             else
-              const Text('Short answers pending mentor review',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                  textAlign: TextAlign.center),
+              const Text('⏳ Short answers pending mentor review', style: TextStyle(color: Colors.orange, fontSize: 12), textAlign: TextAlign.center),
           ],
         ),
         actions: [
@@ -577,10 +511,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Done'),
           ),
@@ -594,17 +526,12 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     final questions = (widget.testData['questions'] as List? ?? []);
     final totalQ = questions.length;
     final answered = _answers.values.where((v) => v.isNotEmpty).length;
-    final timerColor = _timeLeft < 60
-        ? Colors.red
-        : _timeLeft < 300
-            ? Colors.orange
-            : Colors.green;
+    final timerColor = _timeLeft < 60 ? Colors.red : _timeLeft < 300 ? Colors.orange : Colors.green;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(widget.testData['title'] ?? 'Test',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        title: Text(widget.testData['title'] ?? 'Test', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.grey[900],
         elevation: 0.5,
@@ -634,10 +561,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                 const SizedBox(width: 4),
                 Text(
                   _fmtTime(_timeLeft),
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: timerColor),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: timerColor),
                 ),
               ],
             ),
@@ -645,14 +569,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         ],
       ),
       body: _submitting
-          ? const Center(
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Submitting…')
-                ]))
+          ? const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Submitting…')]))
           : questions.isEmpty
               ? const Center(child: Text('No questions found'))
               : Column(
@@ -660,21 +577,14 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                     // Question counter
                     Container(
                       color: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Question ${_currentQ + 1} of $totalQ',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w600)),
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w600)),
                           Text('$answered/$totalQ answered',
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF2563EB),
-                                  fontWeight: FontWeight.w600)),
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ),
@@ -690,8 +600,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border(
-                            top: BorderSide(color: Colors.grey.shade200)),
+                        border: Border(top: BorderSide(color: Colors.grey.shade200)),
                       ),
                       child: Row(
                         children: [
@@ -701,9 +610,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                                 onPressed: () => setState(() => _currentQ--),
                                 icon: const Icon(Icons.chevron_left, size: 18),
                                 label: const Text('Previous'),
-                                style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12)),
+                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
                               ),
                             ),
                           if (_currentQ > 0) const SizedBox(width: 12),
@@ -711,28 +618,21 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                             flex: _currentQ == 0 ? 1 : 1,
                             child: _currentQ < totalQ - 1
                                 ? ElevatedButton.icon(
-                                    onPressed: () =>
-                                        setState(() => _currentQ++),
-                                    icon: const Icon(Icons.chevron_right,
-                                        size: 18),
+                                    onPressed: () => setState(() => _currentQ++),
+                                    icon: const Icon(Icons.chevron_right, size: 18),
                                     label: const Text('Next'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF2563EB),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                     ),
                                   )
                                 : ElevatedButton.icon(
                                     onPressed: () => _submit(),
-                                    icon: const Icon(Icons.check_circle,
-                                        size: 18),
+                                    icon: const Icon(Icons.check_circle, size: 18),
                                     label: const Text('Submit Test'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
+                                      backgroundColor: Colors.green, foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                     ),
                                   ),
                           ),
@@ -765,94 +665,59 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: type == 'mcq'
-                          ? const Color(0xFFDBEAFE)
-                          : const Color(0xFFEDE9FE),
+                      color: type == 'mcq' ? const Color(0xFFDBEAFE) : const Color(0xFFEDE9FE),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       type == 'mcq' ? 'Multiple Choice' : 'Short Answer',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: type == 'mcq'
-                            ? const Color(0xFF1E40AF)
-                            : const Color(0xFF5B21B6),
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: type == 'mcq' ? const Color(0xFF1E40AF) : const Color(0xFF5B21B6),
                       ),
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                      '${q['points'] ?? 1} pt${(q['points'] ?? 1) != 1 ? 's' : ''}',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w600)),
+                  Text('${q['points'] ?? 1} pt${(q['points'] ?? 1) != 1 ? 's' : ''}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 q['questionText'] as String? ?? '',
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
-                    height: 1.4),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF0F172A), height: 1.4),
               ),
               const SizedBox(height: 16),
               if (type == 'mcq')
-                ...['A', 'B', 'C', 'D']
-                    .where((opt) =>
-                        options[opt] != null &&
-                        options[opt].toString().isNotEmpty)
-                    .map((opt) {
+                ...['A', 'B', 'C', 'D'].where((opt) => options[opt] != null && options[opt].toString().isNotEmpty).map((opt) {
                   final selected = _answers[qId] == opt;
                   return GestureDetector(
                     onTap: () => setState(() => _answers[qId] = opt),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? const Color(0xFFEFF6FF)
-                            : Colors.grey[50],
+                        color: selected ? const Color(0xFFEFF6FF) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: selected
-                              ? const Color(0xFF2563EB)
-                              : Colors.grey.shade200,
+                          color: selected ? const Color(0xFF2563EB) : Colors.grey.shade200,
                           width: selected ? 2 : 1,
                         ),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
+                            width: 26, height: 26, decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: selected
-                                  ? const Color(0xFF2563EB)
-                                  : Colors.grey[100],
-                              border: Border.all(
-                                  color: selected
-                                      ? const Color(0xFF2563EB)
-                                      : Colors.grey.shade300),
+                              color: selected ? const Color(0xFF2563EB) : Colors.grey[100],
+                              border: Border.all(color: selected ? const Color(0xFF2563EB) : Colors.grey.shade300),
                             ),
                             child: Center(
                               child: selected
-                                  ? const Icon(Icons.check,
-                                      size: 14, color: Colors.white)
-                                  : Text(opt,
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.grey[600])),
+                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                  : Text(opt, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[600])),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -861,12 +726,8 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                               options[opt]?.toString() ?? '',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: selected
-                                    ? const Color(0xFF1E40AF)
-                                    : const Color(0xFF334155),
-                                fontWeight: selected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
+                                color: selected ? const Color(0xFF1E40AF) : const Color(0xFF334155),
+                                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                               ),
                             ),
                           ),
@@ -874,7 +735,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                       ),
                     ),
                   );
-                }).toList()
+                })
               else
                 TextField(
                   controller: TextEditingController(text: _answers[qId] ?? ''),
@@ -883,15 +744,9 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
                   decoration: InputDecoration(
                     hintText: 'Type your answer here…',
                     hintStyle: TextStyle(color: Colors.grey[400]),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Colors.grey.shade300)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                            color: Color(0xFF2563EB), width: 2)),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2)),
+                    filled: true, fillColor: Colors.grey[50],
                   ),
                 ),
             ],
@@ -928,73 +783,36 @@ class MyResultSheet extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2)),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
             ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text(test['title'] ?? 'Result',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 17)),
+                  Text(test['title'] ?? 'Result', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: (passed == true ||
-                              pct >= (test['passingScore'] ?? 60))
-                          ? Colors.green.shade50
-                          : Colors.red.shade50,
+                      color: (passed == true || pct >= (test['passingScore'] ?? 60)) ? Colors.green.shade50 : Colors.red.shade50,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         Column(children: [
-                          Text('${sub['score']}/${sub['totalPoints']}',
-                              style: const TextStyle(
-                                  fontSize: 28, fontWeight: FontWeight.w800)),
-                          Text('Score',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
+                          Text('${sub['score']}/${sub['totalPoints']}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                          Text('Score', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                         ]),
                         Column(children: [
-                          Text('$pct%',
-                              style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: (passed == true || pct >= 60)
-                                      ? Colors.green
-                                      : Colors.red)),
-                          Text('Percentage',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
+                          Text('$pct%', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: (passed == true || pct >= 60) ? Colors.green : Colors.red)),
+                          Text('Percentage', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                         ]),
                         Column(children: [
-                          Icon(
-                              passed == true
-                                  ? Icons.check_circle
-                                  : passed == false
-                                      ? Icons.cancel
-                                      : Icons.hourglass_empty,
-                              color: passed == true
-                                  ? Colors.green
-                                  : passed == false
-                                      ? Colors.red
-                                      : Colors.orange,
-                              size: 32),
-                          Text(
-                              passed == true
-                                  ? 'Passed'
-                                  : passed == false
-                                      ? 'Failed'
-                                      : 'Pending',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
+                          Icon(passed == true ? Icons.check_circle : passed == false ? Icons.cancel : Icons.hourglass_empty,
+                              color: passed == true ? Colors.green : passed == false ? Colors.red : Colors.orange, size: 32),
+                          Text(passed == true ? 'Passed' : passed == false ? 'Failed' : 'Pending', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                         ]),
                       ],
                     ),
@@ -1014,54 +832,24 @@ class MyResultSheet extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: correct == true
-                          ? Colors.green.shade50
-                          : correct == false
-                              ? Colors.red.shade50
-                              : Colors.grey[50],
+                      color: correct == true ? Colors.green.shade50 : correct == false ? Colors.red.shade50 : Colors.grey[50],
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: correct == true
-                              ? Colors.green.shade200
-                              : correct == false
-                                  ? Colors.red.shade200
-                                  : Colors.grey.shade200),
+                      border: Border.all(color: correct == true ? Colors.green.shade200 : correct == false ? Colors.red.shade200 : Colors.grey.shade200),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Q${i + 1}: ${ans['questionText'] ?? ''}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('Q${i + 1}: ${ans['questionText'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                         const SizedBox(height: 6),
-                        Text(
-                            'Your answer: ${ans['answer']?.toString().isEmpty == true ? '(not answered)' : ans['answer']}',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[700])),
+                        Text('Your answer: ${ans['answer']?.toString().isEmpty == true ? '(not answered)' : ans['answer']}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[700])),
                         if (correct == false && ans['correctAnswer'] != null)
-                          Text('Correct: ${ans['correctAnswer']}',
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w600)),
+                          Text('Correct: ${ans['correctAnswer']}', style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
                         if (correct == null)
-                          const Text('⏳ Pending mentor review',
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.orange)),
+                          const Text('⏳ Pending mentor review', style: TextStyle(fontSize: 11, color: Colors.orange)),
                         Text(
-                          correct == true
-                              ? '+${ans['pointsAwarded']} pts ✓'
-                              : correct == false
-                                  ? '0 pts ✗'
-                                  : '${ans['pointsAwarded'] ?? 0} pts',
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: correct == true
-                                  ? Colors.green
-                                  : correct == false
-                                      ? Colors.red
-                                      : Colors.grey),
+                          correct == true ? '+${ans['pointsAwarded']} pts ✓' : correct == false ? '0 pts ✗' : '${ans['pointsAwarded'] ?? 0} pts',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: correct == true ? Colors.green : correct == false ? Colors.red : Colors.grey),
                         ),
                       ],
                     ),
@@ -1080,8 +868,7 @@ class MyResultSheet extends StatelessWidget {
 class AdminResultsSheet extends StatelessWidget {
   final Map<String, dynamic> data;
   final String testTitle;
-  const AdminResultsSheet(
-      {super.key, required this.data, required this.testTitle});
+  const AdminResultsSheet({super.key, required this.data, required this.testTitle});
 
   @override
   Widget build(BuildContext context) {
@@ -1102,29 +889,21 @@ class AdminResultsSheet extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2)),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 children: [
-                  Text(testTitle,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 16)),
+                  Text(testTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       _statBox('Total', '${stats['total'] ?? 0}', Colors.blue),
-                      _statBox('Submitted', '${stats['submitted'] ?? 0}',
-                          Colors.green),
-                      _statBox('Avg Score', '${stats['avgScore'] ?? 0}%',
-                          Colors.purple),
-                      _statBox('Not Yet', '${stats['notSubmitted'] ?? 0}',
-                          Colors.red),
+                      _statBox('Submitted', '${stats['submitted'] ?? 0}', Colors.green),
+                      _statBox('Avg Score', '${stats['avgScore'] ?? 0}%', Colors.purple),
+                      _statBox('Not Yet', '${stats['notSubmitted'] ?? 0}', Colors.red),
                     ],
                   ),
                 ],
@@ -1132,40 +911,22 @@ class AdminResultsSheet extends StatelessWidget {
             ),
             if (notSubmitted.isNotEmpty)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200)),
+                  decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('⚠ Not Submitted:',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                              color: Colors.red)),
+                      const Text('⚠ Not Submitted:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.red)),
                       const SizedBox(height: 4),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: (notSubmitted as List)
-                            .map((s) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                      color: Colors.red.shade100,
-                                      borderRadius: BorderRadius.circular(20)),
-                                  child: Text(s['name'] ?? '',
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.red)),
-                                ))
-                            .toList(),
+                        spacing: 6, runSpacing: 4,
+                        children: (notSubmitted).map((s) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(20)),
+                          child: Text(s['name'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.red)),
+                        )).toList(),
                       ),
                     ],
                   ),
@@ -1173,11 +934,7 @@ class AdminResultsSheet extends StatelessWidget {
               ),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Submissions',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14))),
+              child: Align(alignment: Alignment.centerLeft, child: Text('Submissions', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14))),
             ),
             Expanded(
               child: ListView.builder(
@@ -1192,47 +949,31 @@ class AdminResultsSheet extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey[50], borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: const Color(0xFFDBEAFE),
-                          radius: 18,
+                          backgroundColor: const Color(0xFFDBEAFE), radius: 18,
                           child: Text((student['name'] as String? ?? '?')[0],
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1E40AF))),
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1E40AF))),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(student['name'] ?? '—',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13)),
-                              Text(sub['status'] ?? '',
-                                  style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500])),
+                              Text(student['name'] ?? '—', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              Text(sub['status'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
                             ],
                           ),
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('${sub['score']}/${sub['totalPoints']}',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 14)),
-                            Text('$pct%',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color:
-                                        pct >= 60 ? Colors.green : Colors.red)),
+                            Text('${sub['score']}/${sub['totalPoints']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            Text('$pct%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: pct >= 60 ? Colors.green : Colors.red)),
                           ],
                         ),
                       ],
@@ -1252,20 +993,11 @@ class AdminResultsSheet extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 3),
         padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withOpacity(0.2))),
+        decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.2))),
         child: Column(
           children: [
-            Text(value,
-                style: TextStyle(
-                    fontWeight: FontWeight.w800, fontSize: 18, color: color)),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600)),
+            Text(value, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: color)),
+            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w600)),
           ],
         ),
       ),

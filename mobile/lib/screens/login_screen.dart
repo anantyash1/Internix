@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Icon(Icons.school, size: 64, color: Color(0xFF2563EB)),
                   const SizedBox(height: 12),
                   Text(
-                    'Internix',
+                    'MR Techlab',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1E40AF),

@@ -302,39 +302,18 @@ export default function LoginPage() {
     }}>
       {/* ── Animated background mesh ── */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        {/* Large ambient orbs */}
-        <div style={{
-          position: 'absolute', top: '-20%', left: '-10%',
-          width: '55%', height: '70%',
-          background: 'radial-gradient(ellipse, rgba(37,99,235,0.14) 0%, transparent 65%)',
-          animation: 'float1 12s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-20%', right: '-10%',
-          width: '50%', height: '65%',
-          background: 'radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 65%)',
-          animation: 'float2 15s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', top: '30%', right: '20%',
-          width: '30%', height: '40%',
-          background: 'radial-gradient(ellipse, rgba(16,185,129,0.07) 0%, transparent 70%)',
-          animation: 'float3 18s ease-in-out infinite',
-        }} />
-
         {/* Grid overlay */}
         <div style={{
           position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
           backgroundSize: '60px 60px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
         }} />
 
         {/* Horizontal glow line */}
         <div style={{
           position: 'absolute', top: '50%', left: 0, right: 0,
           height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.3), rgba(124,58,237,0.3), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), rgba(255,255,255,0.2), transparent)',
           filter: 'blur(1px)',
         }} />
       </div>
@@ -348,18 +327,19 @@ export default function LoginPage() {
         opacity: mounted ? 1 : 0,
         transform: mounted ? 'none' : 'translateX(-20px)',
         transition: 'all 0.7s cubic-bezier(0.4,0,0.2,1)',
+        background: '#000000',
       }}>
         {/* Logo */}
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
               width: 44, height: 44,
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #1a1a1a 100%)',
               borderRadius: 14,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(37,99,235,0.4)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.2), 0 8px 32px rgba(255,255,255,0.2)',
             }}>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: '-0.02em' }}>MR</span>
+              <img src="/logo.png" alt="Logo" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
             </div>
             <div>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1.125rem', color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
@@ -454,16 +434,15 @@ export default function LoginPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2rem',
         position: 'relative', zIndex: 1,
+        background: '#ffffff',
       }}>
         {/* Glass card */}
         <div style={{
           width: '100%', maxWidth: 420,
-          background: 'rgba(255,255,255,0.04)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          background: '#ffffff',
           borderRadius: 24,
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
+          border: '3px solid #000000',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           padding: '2.5rem',
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'none' : 'translateY(20px) scale(0.98)',
@@ -473,11 +452,11 @@ export default function LoginPage() {
           <div style={{ marginBottom: '2rem' }}>
             <div style={{
               fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1.5rem',
-              color: '#fff', letterSpacing: '-0.03em', marginBottom: '0.375rem',
+              color: '#000000', letterSpacing: '-0.03em', marginBottom: '0.375rem',
             }}>
               Welcome back 👋
             </div>
-            <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.35)' }}>
+            <div style={{ fontSize: '0.875rem', color: '#333333' }}>
               Sign in to your account to continue
             </div>
           </div>
@@ -487,14 +466,14 @@ export default function LoginPage() {
             <div>
               <label style={{
                 display: 'block', fontSize: '0.8125rem', fontWeight: 500,
-                color: 'rgba(255,255,255,0.55)', marginBottom: '0.5rem',
+                color: '#000000', marginBottom: '0.5rem',
               }}>
                 Email address
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  color: focused === 'email' ? '#60a5fa' : 'rgba(255,255,255,0.2)',
+                  color: focused === 'email' ? '#000000' : '#999999',
                   transition: 'color 200ms',
                   pointerEvents: 'none',
                 }}>
@@ -514,15 +493,15 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '0.75rem 0.875rem 0.75rem 2.75rem',
                     borderRadius: 12,
-                    border: `1.5px solid ${focused === 'email' ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                    background: focused === 'email' ? 'rgba(96,165,250,0.06)' : 'rgba(255,255,255,0.04)',
-                    color: '#fff',
+                    border: `2px solid ${focused === 'email' ? '#000000' : '#cccccc'}`,
+                    background: '#ffffff',
+                    color: '#000000',
                     fontSize: '0.9375rem',
                     outline: 'none',
                     fontFamily: "'DM Sans', sans-serif",
                     transition: 'all 200ms ease',
                     boxSizing: 'border-box',
-                    boxShadow: focused === 'email' ? '0 0 0 3px rgba(96,165,250,0.1)' : 'none',
+                    boxShadow: focused === 'email' ? '0 0 0 3px rgba(0,0,0,0.1)' : 'none',
                   }}
                 />
               </div>
@@ -532,14 +511,14 @@ export default function LoginPage() {
             <div>
               <label style={{
                 display: 'block', fontSize: '0.8125rem', fontWeight: 500,
-                color: 'rgba(255,255,255,0.55)', marginBottom: '0.5rem',
+                color: '#000000', marginBottom: '0.5rem',
               }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  color: focused === 'pw' ? '#60a5fa' : 'rgba(255,255,255,0.2)',
+                  color: focused === 'pw' ? '#000000' : '#999999',
                   transition: 'color 200ms',
                   pointerEvents: 'none',
                 }}>
@@ -559,15 +538,15 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '0.75rem 2.75rem 0.75rem 2.75rem',
                     borderRadius: 12,
-                    border: `1.5px solid ${focused === 'pw' ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                    background: focused === 'pw' ? 'rgba(96,165,250,0.06)' : 'rgba(255,255,255,0.04)',
-                    color: '#fff',
+                    border: `2px solid ${focused === 'pw' ? '#000000' : '#cccccc'}`,
+                    background: '#ffffff',
+                    color: '#000000',
                     fontSize: '0.9375rem',
                     outline: 'none',
                     fontFamily: "'DM Sans', sans-serif",
                     transition: 'all 200ms ease',
                     boxSizing: 'border-box',
-                    boxShadow: focused === 'pw' ? '0 0 0 3px rgba(96,165,250,0.1)' : 'none',
+                    boxShadow: focused === 'pw' ? '0 0 0 3px rgba(0,0,0,0.1)' : 'none',
                   }}
                 />
                 <button
@@ -576,12 +555,12 @@ export default function LoginPage() {
                   style={{
                     position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.25)', padding: 2,
+                    color: '#666666', padding: 2,
                     display: 'flex', alignItems: 'center',
                     transition: 'color 150ms',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+                  onMouseEnter={e => e.currentTarget.style.color = '#000000'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#666666'}
                 >
                   {show ? (
                     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
@@ -590,7 +569,7 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', lineHeight: 1.5 }}>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#666666', lineHeight: 1.5 }}>
                 Forgot password? Contact your admin to reset it.
               </p>
             </div>
@@ -604,21 +583,19 @@ export default function LoginPage() {
                 width: '100%',
                 padding: '0.8125rem',
                 borderRadius: 12,
-                border: 'none',
-                background: loading
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #7c3aed 100%)',
+                border: '2px solid #000000',
+                background: loading ? '#e0e0e0' : '#000000',
                 color: '#fff',
                 fontSize: '0.9375rem', fontWeight: 700,
                 fontFamily: "'DM Sans', sans-serif",
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem',
                 transition: 'all 200ms ease',
-                boxShadow: loading ? 'none' : '0 4px 24px rgba(37,99,235,0.4)',
+                boxShadow: loading ? 'none' : '0 4px 12px rgba(0,0,0,0.3)',
                 boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.5)'; } }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = loading ? 'none' : '0 4px 24px rgba(37,99,235,0.4)'; }}
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = loading ? 'none' : '0 4px 12px rgba(0,0,0,0.3)'; }}
             >
               {loading ? (
                 <>
@@ -638,21 +615,21 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: 1, background: '#cccccc' }} />
+            <span style={{ fontSize: '0.75rem', color: '#666666', fontWeight: 500 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: '#cccccc' }} />
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)' }}>
+          <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#666666' }}>
             Don't have an account?{' '}
             <Link
               to="/register"
               style={{
-                color: '#60a5fa', fontWeight: 600, textDecoration: 'none',
+                color: '#000000', fontWeight: 600, textDecoration: 'none',
                 transition: 'color 150ms',
               }}
-              onMouseEnter={e => e.target.style.color = '#93c5fd'}
-              onMouseLeave={e => e.target.style.color = '#60a5fa'}
+              onMouseEnter={e => e.target.style.color = '#333333'}
+              onMouseLeave={e => e.target.style.color = '#000000'}
             >
               Create one
             </Link>

@@ -1,47 +1,3 @@
-// import 'package:flutter/material.dart';
-// import '../services/api_service.dart';
-
-// class AttendanceProvider extends ChangeNotifier {
-//   List<dynamic> _records = [];
-//   bool _loading = false;
-//   bool _todayMarked = false;
-
-//   List<dynamic> get records => _records;
-//   bool get loading => _loading;
-//   bool get todayMarked => _todayMarked;
-
-//   Future<void> fetchAttendance() async {
-//     _loading = true;
-//     notifyListeners();
-//     try {
-//       final data = await ApiService.get('/attendance');
-//       _records = data['records'] ?? [];
-//       final today = DateTime.now();
-//       final todayStr =
-//           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-//       _todayMarked = _records.any((r) {
-//         final date = r['date']?.toString().substring(0, 10) ?? '';
-//         return date == todayStr;
-//       });
-//       _loading = false;
-//       notifyListeners();
-//     } catch (e) {
-//       _loading = false;
-//       notifyListeners();
-//     }
-//   }
-
-//   Future<bool> markAttendance() async {
-//     try {
-//       await ApiService.post('/attendance', body: {'status': 'present'});
-//       await fetchAttendance();
-//       return true;
-//     } catch (e) {
-//       return false;
-//     }
-//   }
-// }
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -50,6 +6,7 @@ class AttendanceProvider extends ChangeNotifier {
   List<dynamic> _records = [];
   bool _loading = false;
   bool _submitting = false;
+  String? _error;
   Map<String, dynamic>? _schedule;
   bool _isWorkingDay = true;
   dynamic _todayRecord;
@@ -57,6 +14,7 @@ class AttendanceProvider extends ChangeNotifier {
   List<dynamic> get records => _records;
   bool get loading => _loading;
   bool get submitting => _submitting;
+  String? get error => _error;
   Map<String, dynamic>? get schedule => _schedule;
   bool get isWorkingDay => _isWorkingDay;
   dynamic get todayRecord => _todayRecord;
@@ -66,11 +24,13 @@ class AttendanceProvider extends ChangeNotifier {
 
   Future<void> fetchAttendance() async {
     _loading = true;
+    _error = null;
     notifyListeners();
     try {
       final attendanceData = await ApiService.get('/attendance');
       _records = attendanceData['records'] ?? [];
     } catch (e) {
+      _error = _cleanError(e);
       debugPrint('Attendance fetch error: $e');
     }
 
@@ -94,9 +54,9 @@ class AttendanceProvider extends ChangeNotifier {
   /// [photoFile] is the captured selfie image (can be null)
   Future<Map<String, dynamic>> checkIn(File? photoFile) async {
     _submitting = true;
+    _error = null;
     notifyListeners();
     try {
-      // Only use uploadFile if we have a real photo file
       final data = photoFile != null && photoFile.path.isNotEmpty
           ? await ApiService.uploadFile(
               '/attendance',
@@ -112,6 +72,7 @@ class AttendanceProvider extends ChangeNotifier {
       return {'success': true, 'message': data['message'] ?? 'Checked in!'};
     } catch (e) {
       _submitting = false;
+      _error = _cleanError(e);
       notifyListeners();
       return {'success': false, 'message': _cleanError(e)};
     }
@@ -119,9 +80,10 @@ class AttendanceProvider extends ChangeNotifier {
 
   Future<Map<String, dynamic>> checkOut(File? photoFile) async {
     _submitting = true;
+    _error = null;
     notifyListeners();
     try {
-      // Only use uploadFile if we have a real photo file
+      // POST to same endpoint — backend detects existing record and treats as check-out
       final data = photoFile != null && photoFile.path.isNotEmpty
           ? await ApiService.uploadFile(
               '/attendance',
@@ -137,6 +99,7 @@ class AttendanceProvider extends ChangeNotifier {
       return {'success': true, 'message': data['message'] ?? 'Checked out!'};
     } catch (e) {
       _submitting = false;
+      _error = _cleanError(e);
       notifyListeners();
       return {'success': false, 'message': _cleanError(e)};
     }

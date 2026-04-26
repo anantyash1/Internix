@@ -1,263 +1,241 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useUserStore from '../store/userStore';
-import api from '../lib/axios';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Modal from '../components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Copy, KeyRound, RefreshCw, Search, Trash2, UserCog } from 'lucide-react';
+import { Users, Search, UserCog, Trash2, Filter } from 'lucide-react';
 
-function generatePassword(length = 10) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$';
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+const ROLE_STYLE = {
+  admin:  { cls: 'badge-violet', dot: 'var(--violet-500)', gradient: 'linear-gradient(135deg, #ede9fe, #f5f3ff)' },
+  mentor: { cls: 'badge-amber',  dot: 'var(--amber-500)',  gradient: 'linear-gradient(135deg, #fef3c7, #fffbeb)' },
+  student:{ cls: 'badge-blue',   dot: 'var(--blue-500)',   gradient: 'linear-gradient(135deg, #dbeafe, #eff6ff)' },
+};
+
+function UserRow({ u, currentUser, onAssign, onDelete }) {
+  const [hovered, setHovered] = useState(false);
+  const rs = ROLE_STYLE[u.role] || ROLE_STYLE.student;
+
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ background: hovered ? 'var(--slate-50)' : '', transition: 'background 120ms' }}
+    >
+      <td style={{ padding: '0.875rem 1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+            background: rs.gradient,
+            border: `1.5px solid ${rs.dot}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.875rem',
+            color: rs.dot,
+          }}>
+            {u.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)' }}>{u.name}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>{u.email}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span className={`badge ${rs.cls}`} style={{ textTransform: 'capitalize' }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: rs.dot }} />
+          {u.role}
+        </span>
+      </td>
+      <td style={{ fontSize: '0.8125rem', color: 'var(--slate-500)' }}>
+        {u.mentor ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--amber-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: 'var(--amber-600)' }}>
+              {u.mentor.name?.charAt(0)}
+            </div>
+            {u.mentor.name}
+          </div>
+        ) : <span style={{ color: 'var(--slate-300)' }}>—</span>}
+      </td>
+      <td>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: u.isActive ? 'var(--emerald-500)' : 'var(--rose-400)', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.8125rem', color: u.isActive ? 'var(--emerald-600)' : 'var(--rose-500)', fontWeight: 500 }}>
+            {u.isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      </td>
+      <td style={{ fontSize: '0.8125rem', color: 'var(--slate-400)' }}>
+        {new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+      </td>
+      {currentUser?.role === 'admin' && (
+        <td>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            {u.role === 'student' && (
+              <button onClick={() => onAssign(u._id)} className="btn-icon" title="Assign mentor">
+                <UserCog size={14} />
+              </button>
+            )}
+            <button onClick={() => onDelete(u._id)} className="btn-icon danger" title="Delete user">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </td>
+      )}
+    </tr>
+  );
 }
 
 export default function UsersPage() {
   const user = useAuthStore((s) => s.user);
-  const { users, loading, fetchUsers, assignMentor, resetUserPassword, deleteUser } = useUserStore();
-  const [search, setSearch] = useState('');
+  const { users, loading, fetchUsers, assignMentor, deleteUser } = useUserStore();
+  const [search,     setSearch]     = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [showAssign, setShowAssign] = useState(null);
-  const [mentors, setMentors] = useState([]);
-  const [selectedMentor, setSelectedMentor] = useState('');
-  const [resetTarget, setResetTarget] = useState(null);
-  const [resetPassword, setResetPassword] = useState(generatePassword());
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [assignId,   setAssignId]   = useState(null);
+  const [mentors,    setMentors]    = useState([]);
+  const [selMentor,  setSelMentor]  = useState('');
+  const [assigning,  setAssigning]  = useState(false);
 
   useEffect(() => {
-    fetchUsers({ search, role: roleFilter });
-  }, [fetchUsers, search, roleFilter]);
+    const timer = setTimeout(() => fetchUsers({ search, role: roleFilter }), 300);
+    return () => clearTimeout(timer);
+  }, [search, roleFilter]);
 
-  const openAssignModal = async (studentId) => {
-    setShowAssign(studentId);
-    const allUsers = users.filter((entry) => entry.role === 'mentor');
-    if (allUsers.length === 0) {
-      const { data } = await api.get('/users', { params: { role: 'mentor' } });
+  const openAssign = async (studentId) => {
+    setAssignId(studentId);
+    setSelMentor('');
+    const allMentors = users.filter((u) => u.role === 'mentor');
+    if (allMentors.length === 0) {
+      const { data } = await (await import('../lib/axios')).default.get('/users', { params: { role: 'mentor' } });
       setMentors(data.users);
-    } else {
-      setMentors(allUsers);
-    }
-  };
-
-  const openResetModal = (entry) => {
-    setResetTarget(entry);
-    setResetPassword(generatePassword());
-  };
-
-  const copyToClipboard = async (value) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success('Copied to clipboard');
-    } catch {
-      toast.error('Failed to copy');
-    }
+    } else setMentors(allMentors);
   };
 
   const handleAssign = async () => {
-    if (!selectedMentor) return toast.error('Select a mentor');
+    if (!selMentor) return toast.error('Select a mentor');
+    setAssigning(true);
     try {
-      await assignMentor(showAssign, selectedMentor);
-      toast.success('Mentor assigned');
-      setShowAssign(null);
-      setSelectedMentor('');
+      await assignMentor(assignId, selMentor);
+      toast.success('Mentor assigned!');
+      setAssignId(null);
       fetchUsers({ search, role: roleFilter });
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to assign');
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!resetTarget) return;
-    if (resetPassword.trim().length < 6) {
-      return toast.error('Password must be at least 6 characters');
-    }
-
-    setSavingPassword(true);
-    try {
-      await resetUserPassword(resetTarget._id, resetPassword);
-      toast.success(`Password updated for ${resetTarget.name}`);
-      setResetTarget(null);
-      setResetPassword(generatePassword());
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update password');
-    } finally {
-      setSavingPassword(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    setAssigning(false);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this user?')) return;
-    try {
-      await deleteUser(id);
-      toast.success('User deleted');
-    } catch {
-      toast.error('Failed to delete');
-    }
+    if (!confirm('Delete this user? This action cannot be undone.')) return;
+    try { await deleteUser(id); toast.success('User deleted'); }
+    catch { toast.error('Failed to delete'); }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner label="Loading users…" />;
+
+  const roleGroups = ['all', 'student', 'mentor', 'admin'];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {user?.role === 'mentor' ? 'My Students' : 'Users'}
-          </h1>
-          {user?.role === 'admin' && (
-            <p className="mt-1 text-sm text-gray-500">
-              Admin can reassign mentors and reset student or mentor passwords when they forget login access.
-            </p>
-          )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Header */}
+      <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--blue-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(37,99,235,0.15)' }}>
+            <Users size={19} style={{ color: 'var(--blue-600)' }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>
+              {user?.role === 'mentor' ? 'My Students' : 'Users'}
+            </div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--slate-500)' }}>{users.length} total users</div>
+          </div>
         </div>
       </div>
 
+      {/* Filters */}
       {user?.role === 'admin' && (
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <div className="animate-fade-up stagger-1" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1', maxWidth: 340 }}>
+            <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search users..."
-              className="input-field pl-9"
+              placeholder="Search by name or email…"
+              className="input-field"
+              style={{ paddingLeft: '2.25rem' }}
             />
           </div>
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="input-field w-auto">
-            <option value="">All Roles</option>
-            <option value="student">Students</option>
-            <option value="mentor">Mentors</option>
-            <option value="admin">Admins</option>
-          </select>
+          {/* Role tabs */}
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--slate-100)', borderRadius: 10, padding: '0.25rem' }}>
+            {roleGroups.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r === 'all' ? '' : r)}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  borderRadius: 8, border: 'none',
+                  background: (r === 'all' ? roleFilter === '' : roleFilter === r) ? '#ffffff' : 'transparent',
+                  color: (r === 'all' ? roleFilter === '' : roleFilter === r) ? 'var(--slate-900)' : 'var(--slate-500)',
+                  fontSize: '0.8125rem', fontWeight: (r === 'all' ? roleFilter === '' : roleFilter === r) ? 600 : 400,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)', textTransform: 'capitalize',
+                  transition: 'all 150ms',
+                  boxShadow: (r === 'all' ? roleFilter === '' : roleFilter === r) ? 'var(--shadow-sm)' : 'none',
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* Table */}
       {users.length === 0 ? (
-        <div className="card text-center py-12 text-gray-400">No users found</div>
+        <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '3.5rem 2rem' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.875rem' }}>
+            <Users size={26} style={{ color: 'var(--slate-300)' }} />
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-600)', marginBottom: '0.375rem' }}>
+            No users found
+          </div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
+            {search ? 'Try a different search term.' : 'No users registered yet.'}
+          </div>
+        </div>
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="card animate-fade-up stagger-2" style={{ padding: 0, overflow: 'hidden' }}>
+          <table className="data-table">
             <thead>
-              <tr className="border-b text-left text-gray-500">
-                <th className="pb-3 font-medium">Name</th>
-                <th className="pb-3 font-medium">Email</th>
-                <th className="pb-3 font-medium">Role</th>
-                <th className="pb-3 font-medium">Internship</th>
-                <th className="pb-3 font-medium">Mentor</th>
-                <th className="pb-3 font-medium">Status</th>
-                {user?.role === 'admin' && <th className="pb-3 font-medium">Actions</th>}
+              <tr>
+                <th style={{ padding: '0.875rem 1.25rem 0.75rem' }}>User</th>
+                <th>Role</th>
+                <th>Mentor</th>
+                <th>Status</th>
+                <th>Joined</th>
+                {user?.role === 'admin' && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {users.map((entry) => (
-                <tr key={entry._id} className="border-b last:border-0">
-                  <td className="py-3 font-medium text-gray-900">{entry.name}</td>
-                  <td className="py-3 text-gray-500">{entry.email}</td>
-                  <td className="py-3">
-                    <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100">
-                      {entry.role}
-                    </span>
-                  </td>
-                  <td className="py-3 text-gray-500">{entry.internship?.title || '-'}</td>
-                  <td className="py-3 text-gray-500">{entry.mentor?.name || '-'}</td>
-                  <td className="py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${entry.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {entry.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  {user?.role === 'admin' && (
-                    <td className="py-3">
-                      <div className="flex gap-1">
-                        {entry.role === 'student' && (
-                          <>
-                            <button
-                              onClick={() => openAssignModal(entry._id)}
-                              className="text-primary-600 hover:bg-primary-50 p-1.5 rounded-lg"
-                              title="Assign Mentor"
-                            >
-                              <UserCog size={16} />
-                            </button>
-                          </>
-                        )}
-                        {(entry.role === 'student' || entry.role === 'mentor') && (
-                          <button
-                            onClick={() => openResetModal(entry)}
-                            className="text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg"
-                            title="Reset Password"
-                          >
-                            <KeyRound size={16} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(entry._id)}
-                          className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
+              {users.map((u) => (
+                <UserRow key={u._id} u={u} currentUser={user} onAssign={openAssign} onDelete={handleDelete} />
               ))}
             </tbody>
           </table>
         </div>
       )}
 
-      <Modal isOpen={!!showAssign} onClose={() => setShowAssign(null)} title="Assign Mentor">
-        <div className="space-y-4">
+      {/* Assign mentor modal */}
+      <Modal isOpen={!!assignId} onClose={() => setAssignId(null)} title="Assign mentor">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Mentor</label>
-            <select value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)} className="input-field">
-              <option value="">Choose a mentor</option>
-              {mentors.map((mentor) => (
-                <option key={mentor._id} value={mentor._id}>
-                  {mentor.name} ({mentor.email})
-                </option>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Select mentor</label>
+            <select value={selMentor} onChange={(e) => setSelMentor(e.target.value)} className="input-field">
+              <option value="">Choose a mentor…</option>
+              {mentors.map((m) => (
+                <option key={m._id} value={m._id}>{m.name} ({m.email})</option>
               ))}
             </select>
           </div>
-          <button onClick={handleAssign} className="btn-primary w-full">Assign</button>
-        </div>
-      </Modal>
-
-      <Modal isOpen={!!resetTarget} onClose={() => setResetTarget(null)} title="Reset Password">
-        <div className="space-y-4">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Set a new temporary password for <span className="font-semibold">{resetTarget?.name}</span> ({resetTarget?.role}) and share it securely.
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-            <div className="flex gap-2">
-              <input
-                value={resetPassword}
-                onChange={(e) => setResetPassword(e.target.value)}
-                className="input-field flex-1"
-                placeholder="Enter a temporary password"
-              />
-              <button
-                type="button"
-                onClick={() => setResetPassword(generatePassword())}
-                className="rounded-lg border border-gray-200 px-3 text-gray-600 hover:bg-gray-50"
-                title="Generate Password"
-              >
-                <RefreshCw size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(resetPassword)}
-                className="rounded-lg border border-gray-200 px-3 text-gray-600 hover:bg-gray-50"
-                title="Copy Password"
-              >
-                <Copy size={16} />
-              </button>
-            </div>
-          </div>
-
-          <button onClick={handleResetPassword} disabled={savingPassword} className="btn-primary w-full justify-center">
-            {savingPassword ? 'Updating...' : 'Update Password'}
+          <button onClick={handleAssign} disabled={assigning} className="btn-primary" style={{ justifyContent: 'center', padding: '0.625rem' }}>
+            {assigning ? 'Assigning…' : 'Assign mentor'}
           </button>
         </div>
       </Modal>

@@ -7,6 +7,7 @@ import 'attendance_screen.dart';
 import 'reports_screen.dart';
 import 'certificates_screen.dart';
 import 'videos_screen.dart';
+import 'tests_screen.dart';
 import 'ai_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final screens = <_NavItem>[
       _NavItem(
         screen: const DashboardScreen(),
-        label: 'Dashboard',
+        label: 'Home',
         icon: Icons.dashboard_outlined,
         activeIcon: Icons.dashboard,
       ),
@@ -56,6 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.play_circle_outline,
         activeIcon: Icons.play_circle,
       ),
+      _NavItem(
+        screen: const TestsScreen(),
+        label: 'Tests',
+        icon: Icons.quiz_outlined,
+        activeIcon: Icons.quiz,
+      ),
       if (role == 'student')
         _NavItem(
           screen: const CertificatesScreen(),
@@ -63,12 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.emoji_events_outlined,
           activeIcon: Icons.emoji_events,
         ),
-      _NavItem(
-        screen: const AiChatScreen(),
-        label: 'AI Chat',
-        icon: Icons.smart_toy_outlined,
-        activeIcon: Icons.smart_toy,
-      ),
     ];
 
     // Clamp index to valid range
@@ -82,6 +83,16 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(currentItem.label),
         actions: [
+          // AI Chat button in app bar
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            tooltip: 'AI Chat',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AiChatScreen()),
+              );
+            },
+          ),
           // Role chip
           Container(
             margin: const EdgeInsets.only(right: 4),
@@ -123,16 +134,29 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: screens.map((s) => s.screen).toList(),
       ),
+      // Show Reports FAB when on the Reports tab
+      floatingActionButton: _currentIndex == 3 && role == 'student'
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                final reportsScreen = screens[3].screen;
+                if (reportsScreen is ReportsScreen) {
+                  ReportsScreen.showUploadDialogStatic(context);
+                }
+              },
+              icon: const Icon(Icons.upload),
+              label: const Text('Upload'),
+            )
+          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        labelBehavior: screens.length > 5
+        labelBehavior: screens.length > 6
             ? NavigationDestinationLabelBehavior.onlyShowSelected
             : NavigationDestinationLabelBehavior.alwaysShow,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: screens
             .map((item) => NavigationDestination(
-                  icon: Icon(item.icon),
-                  selectedIcon: Icon(item.activeIcon),
+                  icon: Icon(item.icon, size: 22),
+                  selectedIcon: Icon(item.activeIcon, size: 22),
                   label: item.label,
                 ))
             .toList(),

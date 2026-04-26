@@ -14,8 +14,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<DashboardProvider>(context, listen: false).fetchDashboard());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Provider.of<DashboardProvider>(context, listen: false).fetchDashboard();
+    });
   }
 
   @override
@@ -140,6 +142,51 @@ class _StudentDashboard extends StatelessWidget {
                 Icons.calendar_today, const Color(0xFFF59E0B)),
           ]),
           const SizedBox(height: 16),
+
+          // Video Progress Card
+          if ((stats['totalVideos'] ?? 0) > 0)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Video Progress',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                        Text(
+                          '${stats['completedVideos'] ?? 0}/${stats['totalVideos'] ?? 0}',
+                          style: const TextStyle(
+                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: (stats['videoProgressRate'] ?? 0) / 100,
+                      backgroundColor: const Color(0xFFE5E7EB),
+                      color: const Color(0xFF2563EB),
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${stats['videoProgressRate'] ?? 0}% completed',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+
+          // Quick Info Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -184,7 +231,7 @@ Widget _buildStatGrid(List<_StatItem> items) {
     physics: const NeverScrollableScrollPhysics(),
     mainAxisSpacing: 12,
     crossAxisSpacing: 12,
-    childAspectRatio: 1.6,
+    childAspectRatio: 1.4,
     children: items
         .map((item) => Card(
               child: Padding(
@@ -196,11 +243,14 @@ Widget _buildStatGrid(List<_StatItem> items) {
                     Icon(item.icon, color: item.color, size: 28),
                     const SizedBox(height: 8),
                     Text(item.value,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w700)),
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey[900])),
+                    const SizedBox(height: 2),
                     Text(item.title,
                         style:
-                            TextStyle(fontSize: 12, color: Colors.grey[500])),
+                            TextStyle(fontSize: 13, color: Colors.grey[600])),
                   ],
                 ),
               ),

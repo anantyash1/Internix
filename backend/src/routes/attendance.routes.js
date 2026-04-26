@@ -1,18 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const { getAttendance, markAttendance, markAttendanceByMentor } = require('../controllers/attendance.controller');
-// const { protect, authorize } = require('../middleware/auth.middleware');
-
-// router.use(protect);
-
-// router.get('/', getAttendance);
-// router.post('/', authorize('student'), markAttendance);
-// router.post('/mark', authorize('mentor', 'admin'), markAttendanceByMentor);
-
-// module.exports = router;
-
-
-
 const express = require('express');
 const router = express.Router();
 const {
@@ -28,13 +13,19 @@ const { uploadAttendancePhoto } = require('../config/cloudinary');
 // Optional photo upload middleware wrapper
 const optionalPhotoUpload = (req, res, next) => {
   uploadAttendancePhoto.single('photo')(req, res, (err) => {
-    // Ignore multer errors for optional field - just continue
-    if (err && err.message && err.message.includes('Only image files')) {
-      return res.status(400).json({ message: err.message });
-    }
-    // Ignore "LIMIT_FILE_SIZE" and other non-critical errors
-    if (err && err.code !== 'LIMIT_FILE_SIZE') {
-      console.warn('Photo upload warning:', err.message);
+    if (err) {
+      console.error('Photo upload error:', err.message);
+      // Return clear error message for invalid file types
+      if (err.message && err.message.includes('Only image')) {
+        return res.status(400).json({ 
+          message: err.message,
+          hint: 'Please upload a JPEG, PNG, or WebP image file'
+        });
+      }
+      // Allow check-in without photo even if upload fails for non-type reasons
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        console.warn('Photo file too large, allowing check-in without photo');
+      }
     }
     next();
   });

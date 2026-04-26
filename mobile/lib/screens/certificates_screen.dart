@@ -72,7 +72,8 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                               Text(
                                 internship?['title'] ?? 'Internship',
                                 style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w600),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -97,11 +98,12 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                               const SnackBar(
                                   content: Text('Downloading certificate...')),
                             );
-                            final path = await certProvider.downloadCertificate(
-                                cert['_id'], certNumber);
+                            final path = await certProvider
+                                .downloadCertificate(cert['_id'], certNumber);
                             if (path != null && mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Saved to: $path')),
+                                SnackBar(
+                                    content: Text('Saved to: $path')),
                               );
                             } else if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

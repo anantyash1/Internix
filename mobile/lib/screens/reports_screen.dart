@@ -10,34 +10,8 @@ import '../config/api_config.dart';
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
-  @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
-}
-
-class _ReportsScreenState extends State<ReportsScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Provider.of<ReportProvider>(context, listen: false).fetchReports();
-    });
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'under_review':
-        return Colors.orange;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  void _showUploadDialog() {
+  /// Static helper so HomeScreen can trigger the upload dialog
+  static void showUploadDialogStatic(BuildContext context) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     File? selectedFile;
@@ -109,13 +83,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             listen: false)
                         .uploadReport(titleController.text, descController.text,
                             selectedFile!);
-                    if (mounted) {
-                      messenger.showSnackBar(SnackBar(
-                        content:
-                            Text(ok ? 'Report uploaded!' : 'Upload failed'),
-                        backgroundColor: ok ? Colors.green : Colors.red,
-                      ));
-                    }
+                    messenger.showSnackBar(SnackBar(
+                      content:
+                          Text(ok ? 'Report uploaded!' : 'Upload failed'),
+                      backgroundColor: ok ? Colors.green : Colors.red,
+                    ));
                   },
                   child: const Text('Upload'),
                 ),
@@ -125,6 +97,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Provider.of<ReportProvider>(context, listen: false).fetchReports();
+    });
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'under_review':
+        return Colors.orange;
+      default:
+        return Colors.blue;
+    }
   }
 
   Future<void> _openReportUrl(String rawUrl) async {
@@ -187,172 +186,171 @@ class _ReportsScreenState extends State<ReportsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      floatingActionButton: role == 'student'
-          ? FloatingActionButton.extended(
-              onPressed: _showUploadDialog,
-              icon: const Icon(Icons.upload),
-              label: const Text('Upload'),
-            )
-          : null,
-      body: RefreshIndicator(
-        onRefresh: () => reportProvider.fetchReports(),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (reportProvider.error != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFECACA)),
-                ),
-                child: Text(
-                  reportProvider.error!,
-                  style:
-                      const TextStyle(color: Color(0xFFB91C1C), fontSize: 12),
-                ),
+    // No nested Scaffold — the FAB is managed by HomeScreen
+    return RefreshIndicator(
+      onRefresh: () => reportProvider.fetchReports(),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (reportProvider.error != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
               ),
-            if (reportProvider.reports.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 96),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.description_outlined,
-                        size: 64, color: Colors.grey[300]),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No reports found',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              child: Text(
+                reportProvider.error!,
+                style:
+                    const TextStyle(color: Color(0xFFB91C1C), fontSize: 12),
+              ),
+            ),
+          if (reportProvider.reports.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 96),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.description_outlined,
+                      size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No reports found',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                  ),
+                  if (role == 'student') ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Tap the Upload button to submit a report',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ],
-                ),
-              )
-            else
-              ...reportProvider.reports.map((report) {
-                final status = report['status'] ?? 'submitted';
-                final title = report['title']?.toString() ?? '';
-                final description = report['description']?.toString() ?? '';
-                final feedback = report['feedback']?.toString() ?? '';
-                final fileUrl = report['fileUrl']?.toString() ?? '';
-                final studentName = report['student']?['name']?.toString();
+                ],
+              ),
+            )
+          else
+            ...reportProvider.reports.map((report) {
+              final status = report['status'] ?? 'submitted';
+              final title = report['title']?.toString() ?? '';
+              final description = report['description']?.toString() ?? '';
+              final feedback = report['feedback']?.toString() ?? '';
+              final fileUrl = report['fileUrl']?.toString() ?? '';
+              final studentName = report['student']?['name']?.toString();
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 2),
-                              child: Icon(Icons.description,
-                                  size: 20, color: Colors.grey),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color:
-                                    _statusColor(status).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                status.replaceAll('_', ' '),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _statusColor(status),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (description.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(Icons.description,
+                                size: 20, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
                             child: Text(
-                              description,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 13),
+                              title,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                           ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            if (studentName != null)
-                              Text(
-                                'By: $studentName',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey[500]),
-                              ),
-                            if (fileUrl.isNotEmpty)
-                              TextButton.icon(
-                                onPressed: () => _openReportUrl(fileUrl),
-                                icon: const Icon(Icons.open_in_new, size: 16),
-                                label: const Text('View',
-                                    style: TextStyle(fontSize: 12)),
-                              ),
-                            if (fileUrl.isNotEmpty)
-                              TextButton.icon(
-                                onPressed: () =>
-                                    _downloadReport(context, report),
-                                icon: const Icon(Icons.download_rounded,
-                                    size: 16),
-                                label: const Text('Download',
-                                    style: TextStyle(fontSize: 12)),
-                              ),
-                          ],
-                        ),
-                        if (feedback.isNotEmpty)
+                          const SizedBox(width: 8),
                           Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(8),
+                              color:
+                                  _statusColor(status).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.feedback_outlined,
-                                    size: 16, color: Color(0xFF2563EB)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    feedback,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Color(0xFF1E40AF)),
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              status.replaceAll('_', ' '),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _statusColor(status),
+                              ),
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
+                      if (description.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            description,
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 13),
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (studentName != null)
+                            Text(
+                              'By: $studentName',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[500]),
+                            ),
+                          if (fileUrl.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () => _openReportUrl(fileUrl),
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              label: const Text('View',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          if (fileUrl.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () =>
+                                  _downloadReport(context, report),
+                              icon: const Icon(Icons.download_rounded,
+                                  size: 16),
+                              label: const Text('Download',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                        ],
+                      ),
+                      if (feedback.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F9FF),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.feedback_outlined,
+                                  size: 16, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  feedback,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Color(0xFF1E40AF)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
-                );
-              }),
-          ],
-        ),
+                ),
+              );
+            }),
+        ],
       ),
     );
   }
