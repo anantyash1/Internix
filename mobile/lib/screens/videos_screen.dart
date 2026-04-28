@@ -27,13 +27,18 @@ class _VideosScreenState extends State<VideosScreen> {
     final role = auth.role;
 
     if (videoProvider.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ColoredBox(
+        color: Color(0xFFF8FAFC),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => videoProvider.fetchVideos(),
-      child: Column(
-        children: [
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: RefreshIndicator(
+        onRefresh: () => videoProvider.fetchVideos(),
+        child: Column(
+          children: [
           // Progress bar for students
           if (role == 'student' && videoProvider.videos.isNotEmpty)
             Container(
@@ -186,7 +191,8 @@ class _VideosScreenState extends State<VideosScreen> {
                     },
                   ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

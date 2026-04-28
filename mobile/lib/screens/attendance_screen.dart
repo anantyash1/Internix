@@ -272,7 +272,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final role = auth.role;
 
     if (attendance.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ColoredBox(
+        color: Color(0xFFF8FAFC),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
     final schedule = attendance.schedule;
@@ -280,11 +283,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final todayRecord = attendance.todayRecord;
     final isStudent = role == 'student';
 
-    return RefreshIndicator(
-      onRefresh: () => attendance.fetchAttendance(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: RefreshIndicator(
+        onRefresh: () => attendance.fetchAttendance(),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           // Work schedule info banner
           if (isStudent && schedule != null)
             Container(
@@ -606,7 +611,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
               );
             }),
-        ],
+          ],
+        ),
       ),
     );
   }

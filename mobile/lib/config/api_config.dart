@@ -7,7 +7,7 @@ class ApiConfig {
   );
 
   // Default fallback for local development.
-  static const String _fallbackBaseUrl = 'http://192.168.0.113:5000/api';
+  static const String _fallbackBaseUrl = 'http://10.126.80.238:5000/api';
 
   static String get baseUrl {
     final value = _definedBaseUrl.trim();

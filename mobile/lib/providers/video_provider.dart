@@ -54,4 +54,9 @@ class VideoProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<bool> markComplete(String videoId) async {
+    final progress = await syncProgress(videoId, {'completed': true});
+    return progress != null;
+  }
 }

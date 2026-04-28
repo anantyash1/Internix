@@ -5,7 +5,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatCard from '../components/ui/StatCard';
 import {
   Users, ListTodo, FileText, Briefcase, Award, CalendarCheck,
-  CheckCircle, TrendingUp, Clock, Star, Activity,
+  CheckCircle, TrendingUp, Clock, ExternalLink, Activity,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -34,6 +34,37 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 const PIE_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e'];
+
+const API_ORIGIN = (() => {
+  try {
+    return new URL(import.meta.env.VITE_API_URL || '/api', window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+})();
+
+function resolveAssetUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  try {
+    const resolved = new URL(trimmed, API_ORIGIN);
+    if (resolved.protocol === 'http:') {
+      resolved.protocol = 'https:';
+    }
+    return resolved.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+function formatStatusLabel(status) {
+  if (!status) return 'Submitted';
+  const normalized = String(status).replaceAll('_', ' ');
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
 
 /* ── Section wrapper ── */
 function Section({ title, action, children, delay = 0 }) {
@@ -268,7 +299,7 @@ function MentorDashboard({ data }) {
 
 /* ─────────────────────── Student ─────────────────────── */
 function StudentDashboard({ data }) {
-  const { stats = {}, tasksByStatus = {}, todayAttendance, certificates = [] } = data;
+  const { stats = {}, tasksByStatus = {}, todayAttendance, certificates = [], recentReports = [] } = data;
 
   const taskData = Object.entries(tasksByStatus).map(([k, v]) => ({
     name: k.replace('_', ' '), value: v,
@@ -351,6 +382,90 @@ function StudentDashboard({ data }) {
           </div>
         </div>
       </Section>
+
+      {/* Recent reports */}
+      {recentReports.length > 0 && (
+        <Section title="Recent reports" delay={120}>
+          <div className="card" style={{ padding: '0.875rem 1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {recentReports.map((report) => {
+                const fileUrl = resolveAssetUrl(report.fileUrl);
+                const statusClass = `badge ${
+                  report.status === 'approved'
+                    ? 'badge-green'
+                    : report.status === 'rejected'
+                      ? 'badge-red'
+                      : report.status === 'under_review'
+                        ? 'badge-amber'
+                        : 'badge-blue'
+                }`;
+                const isImage = report.fileType === 'image' || /\.(jpe?g|png|webp|gif)$/i.test(report.fileUrl || '');
+
+                return (
+                  <div
+                    key={report._id || `${report.title}-${report.createdAt}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.75rem',
+                      padding: '0.5rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--slate-100)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', minWidth: 0 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--slate-200)', background: 'var(--slate-50)', flexShrink: 0 }}>
+                        {isImage && fileUrl ? (
+                          <img
+                            src={fileUrl}
+                            alt={report.title || 'Report file'}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: 'var(--slate-400)' }}>
+                            <FileText size={15} />
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--slate-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {report.title || 'Untitled report'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.1875rem' }}>
+                          <span className={statusClass}>{formatStatusLabel(report.status)}</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>
+                            {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {fileUrl && (
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          fontSize: '0.75rem',
+                          color: 'var(--blue-600)',
+                          textDecoration: 'none',
+                          flexShrink: 0,
+                        }}
+                      >
+                        View <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Section>
+      )}
 
       {/* Task breakdown */}
       {taskData.length > 0 && (

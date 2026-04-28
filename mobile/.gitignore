@@ -5,3 +5,5 @@ build/
 .idea/
 .flutter-plugins
 .flutter-plugins-dependencies
+android/.gradle-user/
+android/.gradle/

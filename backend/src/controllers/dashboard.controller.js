@@ -119,6 +119,7 @@ async function getStudentDashboard(req, res) {
     todayAttendance,
     totalAttendance,
     certificates,
+    recentReports,
     completedVideoCount,
     totalVideoCount
   ] = await Promise.all([
@@ -135,6 +136,10 @@ async function getStudentDashboard(req, res) {
     Certificate.find({ student: studentId })
       .populate('internship', 'title')
       .sort({ createdAt: -1 }),
+    Report.find({ student: studentId })
+      .select('title fileUrl fileType status createdAt feedback')
+      .sort({ createdAt: -1 })
+      .limit(5),
 
     // ✅ YOUR NEW VIDEO QUERIES (CORRECT POSITION)
     VideoProgress.countDocuments({ student: studentId, completed: true }),
@@ -174,6 +179,7 @@ async function getStudentDashboard(req, res) {
     }, {}),
     todayAttendance: todayAttendance ? todayAttendance.status : null,
     certificates,
+    recentReports,
   });
 }
 

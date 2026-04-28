@@ -41,52 +41,57 @@ class _TestsScreenState extends State<TestsScreen> {
     final role = auth.role;
 
     if (testProvider.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ColoredBox(
+        color: Color(0xFFF8FAFC),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => testProvider.fetchTests(),
-      child: testProvider.tests.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 8),
-                  Text(
-                    role == 'student' ? 'No tests assigned yet' : 'No tests created yet',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: testProvider.tests.length,
-              itemBuilder: (context, index) {
-                final test = testProvider.tests[index];
-                final mySub = test.mySubmission;
-                final hasSubmitted = mySub != null &&
-                    (mySub['status'] == 'submitted' || mySub['status'] == 'reviewed');
-                final inProgress = mySub != null && mySub['status'] == 'in_progress';
-                final isOverdue = test.isOverdue;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                      color: isOverdue && !hasSubmitted
-                          ? Colors.red.shade200
-                          : Colors.grey.shade200,
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: RefreshIndicator(
+        onRefresh: () => testProvider.fetchTests(),
+        child: testProvider.tests.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[300]),
+                    const SizedBox(height: 8),
+                    Text(
+                      role == 'student' ? 'No tests assigned yet' : 'No tests created yet',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 16),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: testProvider.tests.length,
+                itemBuilder: (context, index) {
+                  final test = testProvider.tests[index];
+                  final mySub = test.mySubmission;
+                  final hasSubmitted = mySub != null &&
+                      (mySub['status'] == 'submitted' || mySub['status'] == 'reviewed');
+                  final inProgress = mySub != null && mySub['status'] == 'in_progress';
+                  final isOverdue = test.isOverdue;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(
+                        color: isOverdue && !hasSubmitted
+                            ? Colors.red.shade200
+                            : Colors.grey.shade200,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Row(
                           children: [
                             Expanded(
@@ -244,12 +249,13 @@ class _TestsScreenState extends State<TestsScreen> {
                               ),
                           ],
                         ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
+      ),
     );
   }
 
@@ -455,7 +461,7 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
         orElse: () => TestModel(id: '', title: '', description: '', instructions: '', duration: 0, totalPoints: 0, status: '', passingScore: 0, showResultsToStudent: false, questions: []),
       ).mySubmission;
 
-      _showResultDialog(sub);
+      _showResultDialog(sub, autoSubmitted: autoSubmit);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -467,7 +473,10 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
     }
   }
 
-  void _showResultDialog(Map<String, dynamic>? sub) {
+  void _showResultDialog(
+    Map<String, dynamic>? sub, {
+    required bool autoSubmitted,
+  }) {
     final pct = sub?['percentage'] ?? 0;
     final score = sub?['score'] ?? 0;
     final total = sub?['totalPoints'] ?? (widget.testData['totalPoints'] ?? 0);
@@ -487,7 +496,10 @@ class _TestTakingScreenState extends State<TestTakingScreen> {
               size: 28,
             ),
             const SizedBox(width: 8),
-            Text(autoSubmit ? 'Auto Submitted!' : 'Test Submitted!', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              autoSubmitted ? 'Auto Submitted!' : 'Test Submitted!',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
           ],
         ),
         content: Column(

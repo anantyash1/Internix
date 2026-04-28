@@ -17,11 +17,66 @@ import {
   Youtube,
 } from 'lucide-react';
 
+const API_ORIGIN = (() => {
+  try {
+    return new URL(api.defaults.baseURL || '/api', window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+})();
+
+function resolveMediaUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  try {
+    const resolved = new URL(trimmed, API_ORIGIN);
+    if (resolved.protocol === 'http:') {
+      resolved.protocol = 'https:';
+    }
+    return resolved.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 function extractYoutubeVideoId(url) {
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  const normalized = resolveMediaUrl(url);
+  if (!normalized) return '';
+
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.replace(/^www\./, '');
+
+    if (host === 'youtu.be') {
+      const id = parsed.pathname.split('/').filter(Boolean)[0] || '';
+      return id.length === 11 ? id : '';
+    }
+
+    if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+      const fromQuery = parsed.searchParams.get('v') || '';
+      if (fromQuery.length === 11) return fromQuery;
+
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const markerIndex = segments.findIndex((segment) =>
+        ['embed', 'shorts', 'live'].includes(segment)
+      );
+
+      if (markerIndex !== -1) {
+        const id = segments[markerIndex + 1] || '';
+        return id.length === 11 ? id : '';
+      }
+    }
+  } catch {
+    // Fall back to regex parsing below.
+  }
+
+  const match = normalized.match(
+    /(?:[?&]v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/
   );
-  return match ? match[1] : '';
+  return match?.[1] || '';
 }
 
 function loadYoutubeApi() {
@@ -58,9 +113,11 @@ function loadYoutubeApi() {
 }
 
 function VideoThumbnail({ video }) {
-  return video.thumbnailUrl ? (
+  const thumbnailUrl = resolveMediaUrl(video.thumbnailUrl);
+
+  return thumbnailUrl ? (
     <img
-      src={video.thumbnailUrl}
+      src={thumbnailUrl}
       alt={video.title}
       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       onError={(event) => {
@@ -172,6 +229,7 @@ function UploadTrackedPlayer({ video, onSync }) {
   const intervalRef = useRef(null);
   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
   const skippedRef = useRef(Boolean(video?.progress?.skipped));
+  const mediaUrl = resolveMediaUrl(video.url);
 
   useEffect(() => {
     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
@@ -242,7 +300,7 @@ function UploadTrackedPlayer({ video, onSync }) {
   return (
     <video
       ref={videoRef}
-      src={video.url}
+      src={mediaUrl}
       controls
       controlsList="nodownload"
       style={{ width: '100%', height: '100%', display: 'block' }}
@@ -265,6 +323,8 @@ function YoutubeTrackedPlayer({ video, onSync }) {
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const pollRef = useRef(null);
+  const videoUrl = resolveMediaUrl(video.url);
+  const videoId = extractYoutubeVideoId(videoUrl);
   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
   const skippedRef = useRef(Boolean(video?.progress?.skipped));
   const lastSyncAtRef = useRef(0);
@@ -277,7 +337,9 @@ function YoutubeTrackedPlayer({ video, onSync }) {
 
   useEffect(() => {
     let cancelled = false;
-    const videoId = extractYoutubeVideoId(video.url);
+    if (!videoId) {
+      return undefined;
+    }
 
     const stopPolling = () => {
       if (pollRef.current) {
@@ -369,6 +431,26 @@ function YoutubeTrackedPlayer({ video, onSync }) {
       playerRef.current = null;
     };
   }, [onSync, video?._id, video?.progress?.completed, video.url]);
+
+  if (!videoId) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            Could not play this YouTube link inside the app.
+          </div>
+          <a
+            href={videoUrl || video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+          >
+            Open on YouTube
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return <div ref={hostRef} style={{ width: '100%', height: '100%' }} />;
 }

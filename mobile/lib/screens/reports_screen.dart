@@ -183,15 +183,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final role = auth.role;
 
     if (reportProvider.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ColoredBox(
+        color: Color(0xFFF8FAFC),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
 
     // No nested Scaffold — the FAB is managed by HomeScreen
-    return RefreshIndicator(
-      onRefresh: () => reportProvider.fetchReports(),
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: RefreshIndicator(
+        onRefresh: () => reportProvider.fetchReports(),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           if (reportProvider.error != null)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -350,7 +355,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
               );
             }),
-        ],
+          ],
+        ),
       ),
     );
   }

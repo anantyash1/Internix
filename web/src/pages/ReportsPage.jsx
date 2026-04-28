@@ -6,6 +6,31 @@ import Modal from '../components/ui/Modal';
 import toast from 'react-hot-toast';
 import { Upload, FileText, ExternalLink, CheckCircle, XCircle, Clock, FileImage, RefreshCw } from 'lucide-react';
 
+const API_ORIGIN = (() => {
+  try {
+    return new URL(api.defaults.baseURL || '/api', window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+})();
+
+function resolveAssetUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  try {
+    const resolved = new URL(trimmed, API_ORIGIN);
+    if (resolved.protocol === 'http:') {
+      resolved.protocol = 'https:';
+    }
+    return resolved.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 const STATUS_MAP = {
   submitted:    { label: 'Submitted',    cls: 'badge-blue',   bg: 'var(--blue-50)',    color: 'var(--blue-600)'    },
   under_review: { label: 'In review',    cls: 'badge-amber',  bg: 'var(--amber-50)',   color: 'var(--amber-500)'   },
@@ -17,6 +42,7 @@ function ReportCard({ report, user, onReview, index }) {
   const [hovered, setHovered] = useState(false);
   const st = STATUS_MAP[report.status] || STATUS_MAP.submitted;
   const isPdf = report.fileType === 'pdf' || report.fileUrl?.includes('.pdf');
+  const reportFileUrl = resolveAssetUrl(report.fileUrl);
   const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
 
   return (
@@ -44,7 +70,9 @@ function ReportCard({ report, user, onReview, index }) {
         transition: 'transform 200ms cubic-bezier(0.34,1.56,0.64,1)',
         transform: hovered ? 'scale(1.05)' : '',
       }}>
-        <FileText size={20} style={{ color: isPdf ? 'var(--rose-500)' : 'var(--blue-500)' }} />
+        {isPdf
+          ? <FileText size={20} style={{ color: 'var(--rose-500)' }} />
+          : <FileImage size={20} style={{ color: 'var(--blue-500)' }} />}
       </div>
 
       {/* Content */}
@@ -79,7 +107,7 @@ function ReportCard({ report, user, onReview, index }) {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
-            <a href={report.fileUrl} target="_blank" rel="noopener noreferrer"
+            <a href={reportFileUrl || report.fileUrl} target="_blank" rel="noopener noreferrer"
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.375rem',
                 padding: '0.375rem 0.625rem',

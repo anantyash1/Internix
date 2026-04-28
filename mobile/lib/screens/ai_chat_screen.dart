@@ -60,8 +60,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final userName = auth.user?['name']?.split(' ').first ?? 'there';
 
-    return Column(
-      children: [
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
         // ── Messages area ──────────────────────────────────────────────
         Expanded(
           child: ai.messages.isEmpty
@@ -181,7 +183,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
             ],
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 
@@ -146,7 +147,7 @@ class ApiService {
       final multipartFile = await http.MultipartFile.fromPath(
         fieldName, 
         file.path,
-        contentType: http.MediaType.parse(mimeType),
+        contentType: MediaType.parse(mimeType),
       );
       request.files.add(multipartFile);
       
