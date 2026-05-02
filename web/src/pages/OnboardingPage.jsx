@@ -156,7 +156,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div className="responsive-grid-onboarding">
         {/* ── Form ── */}
         <div className="card animate-fade-up stagger-1" style={{ padding: '1.5rem 1.75rem' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-900)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

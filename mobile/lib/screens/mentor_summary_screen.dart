@@ -149,7 +149,7 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                                           radius: 16,
                                           backgroundColor: active
                                               ? theme.colorScheme.primary.withOpacity(0.2)
-                                              : theme.colorScheme.surfaceVariant,
+                                              : theme.colorScheme.surfaceContainerHighest,
                                           child: Text(
                                             u.initials,
                                             style: TextStyle(
@@ -361,7 +361,7 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

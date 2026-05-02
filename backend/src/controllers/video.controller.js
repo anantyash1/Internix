@@ -239,12 +239,15 @@ async function syncVideoProgress(req, res, next) {
       return res.status(404).json({ message: 'Video not found' });
     }
 
-    if (!req.user.internship || video.internship?.toString() !== req.user.internship.toString()) {
-      return res.status(403).json({ message: 'This video is not assigned to your internship' });
-    }
+    // Allow mentors/admins to track progress for any video, students only for their assigned internship
+    if (req.user.role === 'student') {
+      if (!req.user.internship || video.internship?.toString() !== req.user.internship.toString()) {
+        return res.status(403).json({ message: 'This video is not assigned to your internship' });
+      }
 
-    if (!isVideoAssignedToStudent(video, req.user._id)) {
-      return res.status(403).json({ message: 'This video is not assigned to you' });
+      if (!isVideoAssignedToStudent(video, req.user._id)) {
+        return res.status(403).json({ message: 'This video is not assigned to you' });
+      }
     }
 
     const currentTime = sanitizeSeconds(req.body.currentTime);

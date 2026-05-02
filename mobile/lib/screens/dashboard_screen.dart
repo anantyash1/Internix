@@ -152,11 +152,18 @@ class _StudentDashboard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Video Progress',
+                        const Expanded(
+                          child: Text(
+                            'Video Progress',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600)),
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '${stats['completedVideos'] ?? 0}/${stats['totalVideos'] ?? 0}',
                           style: const TextStyle(
@@ -228,10 +235,10 @@ Widget _buildStatGrid(List<_StatItem> items) {
   return GridView.count(
     crossAxisCount: 2,
     shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
+        physics: const NeverScrollableScrollPhysics(),
     mainAxisSpacing: 12,
     crossAxisSpacing: 12,
-    childAspectRatio: 1.4,
+    childAspectRatio: 1.25,
     children: items
         .map((item) => Card(
               child: Padding(
@@ -242,15 +249,26 @@ Widget _buildStatGrid(List<_StatItem> items) {
                   children: [
                     Icon(item.icon, color: item.color, size: 28),
                     const SizedBox(height: 8),
-                    Text(item.value,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        item.value,
                         style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
-                            color: Colors.grey[900])),
+                            color: Colors.grey[900]),
+                        maxLines: 1,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(item.title,
-                        style:
-                            TextStyle(fontSize: 13, color: Colors.grey[600])),
+                    Text(
+                      item.title,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -270,14 +288,30 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-          Text(value,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
               style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: valueColor ?? Colors.grey[800],
-                  fontSize: 14)),
+                  fontSize: 14),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

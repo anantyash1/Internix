@@ -119,7 +119,7 @@ function AdminDashboard({ data }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* Stats grid */}
       <Section delay={0}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+        <div className="responsive-grid-3">
           <StatCard title="Total Students"  value={stats.totalStudents  ?? 0} icon={Users}     color="primary" />
           <StatCard title="Total Mentors"   value={stats.totalMentors   ?? 0} icon={Users}     color="violet" />
           <StatCard title="Internships"     value={stats.totalInternships ?? 0} icon={Briefcase} color="green" />
@@ -131,9 +131,9 @@ function AdminDashboard({ data }) {
 
       {/* Charts row */}
       <Section delay={80}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="responsive-grid-2">
           {/* Tasks pie */}
-          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+          <div className="card" style={{ padding: '1.25rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
               Task distribution
             </div>
@@ -152,7 +152,7 @@ function AdminDashboard({ data }) {
           </div>
 
           {/* Attendance pie */}
-          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+          <div className="card" style={{ padding: '1.25rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
               Attendance overview
             </div>
@@ -175,7 +175,8 @@ function AdminDashboard({ data }) {
       {/* Recent users table */}
       {recentUsers.length > 0 && (
         <Section title="Recently joined" delay={160}>
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card" style={{ padding: 0 }}>
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -215,6 +216,7 @@ function AdminDashboard({ data }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </Section>
       )}
@@ -233,7 +235,7 @@ function MentorDashboard({ data }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       <Section delay={0}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+        <div className="responsive-grid-3">
           <StatCard title="My Students"     value={stats.myStudents    ?? 0} icon={Users}    color="primary" />
           <StatCard title="Tasks Created"   value={stats.totalTasks    ?? 0} icon={ListTodo} color="green" />
           <StatCard title="Pending Reviews" value={stats.pendingReports ?? 0} icon={FileText} color="amber" />
@@ -241,8 +243,8 @@ function MentorDashboard({ data }) {
       </Section>
 
       <Section delay={60}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1rem' }}>
-          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+        <div className="responsive-grid-2-asymmetric">
+          <div className="card" style={{ padding: '1.25rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
               Tasks by status
             </div>
@@ -257,7 +259,7 @@ function MentorDashboard({ data }) {
             </ResponsiveContainer>
           </div>
 
-          <div className="card" style={{ padding: '1.25rem 1.5rem' }}>
+          <div className="card" style={{ padding: '1.25rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1rem' }}>
               Recent tasks
             </div>
@@ -314,7 +316,7 @@ function StudentDashboard({ data }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* Stats */}
       <Section delay={0}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+        <div className="responsive-grid-4">
           <StatCard title="Total Tasks"     value={stats.totalTasks    ?? 0} icon={ListTodo}    color="primary" />
           <StatCard title="Completed"       value={stats.completedTasks ?? 0} icon={CheckCircle} color="green" />
           <StatCard title="Task Completion" value={`${taskRate}%`}             icon={TrendingUp}  color="violet" />
@@ -324,9 +326,9 @@ function StudentDashboard({ data }) {
 
       {/* Progress bars + today */}
       <Section delay={80}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="responsive-grid-2">
           {/* Progress card */}
-          <div className="card" style={{ padding: '1.375rem 1.5rem' }}>
+          <div className="card" style={{ padding: '1.375rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1.25rem' }}>
               My progress
             </div>
@@ -351,7 +353,7 @@ function StudentDashboard({ data }) {
           </div>
 
           {/* Quick status */}
-          <div className="card" style={{ padding: '1.375rem 1.5rem' }}>
+          <div className="card" style={{ padding: '1.375rem 1.5rem', minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--slate-900)', marginBottom: '1.25rem' }}>
               At a glance
             </div>

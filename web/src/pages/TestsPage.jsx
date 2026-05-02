@@ -443,7 +443,8 @@ function ResultsModal({ isOpen, onClose, testId }) {
           {/* Submissions table */}
           {data.submissions.length > 0 && (
             <div style={{ maxHeight: 380, overflowY: 'auto', borderRadius: 'var(--radius-md)', border: '1px solid var(--slate-200)', marginBottom: '1rem' }}>
-              <table className="data-table" style={{ minWidth: 600 }}>
+              <div className="table-scroll">
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th style={{ padding: '0.75rem 1rem 0.625rem' }}>Student</th>
@@ -496,6 +497,7 @@ function ResultsModal({ isOpen, onClose, testId }) {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

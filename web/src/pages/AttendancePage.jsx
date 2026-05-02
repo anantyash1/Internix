@@ -598,7 +598,7 @@ export default function AttendancePage() {
 
         {/* Quick stats */}
         {total > 0 && (
-          <div className="animate-fade-up stagger-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.875rem' }}>
+          <div className="animate-fade-up stagger-2 responsive-grid-4">
             {[
               { label: 'Attendance rate', value: `${rate}%`, color: 'var(--blue-600)', bg: 'var(--blue-50)', border: 'rgba(37,99,235,0.15)' },
               { label: 'Present days', value: presentCount, color: 'var(--emerald-500)', bg: 'var(--emerald-50)', border: 'rgba(16,185,129,0.15)' },
@@ -608,6 +608,7 @@ export default function AttendancePage() {
               <div key={s.label} style={{
                 background: s.bg, border: `1px solid ${s.border}`,
                 borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem',
+                minWidth: 0,
               }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.375rem', color: s.color, letterSpacing: '-0.03em' }}>
                   {s.value}
@@ -632,7 +633,8 @@ export default function AttendancePage() {
             </div>
           </div>
         ) : (
-          <div className="card animate-fade-up stagger-3" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card animate-fade-up stagger-3" style={{ padding: 0 }}>
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -656,6 +658,7 @@ export default function AttendancePage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

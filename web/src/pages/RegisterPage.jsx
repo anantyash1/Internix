@@ -36,11 +36,13 @@ export default function RegisterPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--slate-50)',
-      padding: '2rem 1rem',
+      padding:
+        'max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left))',
       fontFamily: 'var(--font-body)',
+      boxSizing: 'border-box',
     }}>
       <div style={{
         width: '100%', maxWidth: 480,

@@ -292,14 +292,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      background: '#060d1f',
-      fontFamily: "'DM Sans', sans-serif",
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
+    <div
+      className="login-page-root"
+      style={{
+        background: '#060d1f',
+        fontFamily: "'DM Sans', sans-serif",
+        position: 'relative',
+      }}
+    >
       {/* ── Animated background mesh ── */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         {/* Grid overlay */}
@@ -319,16 +319,18 @@ export default function LoginPage() {
       </div>
 
       {/* ── Left: Branding panel ── */}
-      <div style={{
-        flex: '0 0 52%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        padding: '3rem 3.5rem',
-        position: 'relative', zIndex: 1,
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'none' : 'translateX(-20px)',
-        transition: 'all 0.7s cubic-bezier(0.4,0,0.2,1)',
-        background: '#000000',
-      }}>
+      <div
+        className="login-page-brand"
+        style={{
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          padding: 'clamp(1.25rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3.5rem)',
+          position: 'relative', zIndex: 1,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'none' : 'translateX(-20px)',
+          transition: 'all 0.7s cubic-bezier(0.4,0,0.2,1)',
+          background: '#000000',
+        }}
+      >
         {/* Logo */}
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -369,15 +371,17 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <h1 style={{
-              fontFamily: 'Outfit, sans-serif',
-              fontWeight: 800,
-              fontSize: '3.25rem',
-              color: '#ffffff',
-              letterSpacing: '-0.04em',
-              lineHeight: 1.08,
-              marginBottom: '1.25rem',
-            }}>
+            <h1
+              className="login-hero-heading"
+              style={{
+                fontFamily: 'Outfit, sans-serif',
+                fontWeight: 800,
+                color: '#ffffff',
+                letterSpacing: '-0.04em',
+                lineHeight: 1.08,
+                marginBottom: '1.25rem',
+              }}
+            >
               Manage internships<br />
               <span style={{
                 background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
@@ -429,13 +433,16 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right: Login form panel ── */}
-      <div style={{
-        flex: 1,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '2rem',
-        position: 'relative', zIndex: 1,
-        background: '#ffffff',
-      }}>
+      <div
+        className="login-page-form"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 'clamp(1rem, 4vw, 2rem)',
+          position: 'relative', zIndex: 1,
+          background: '#ffffff',
+          boxSizing: 'border-box',
+        }}
+      >
         {/* Glass card */}
         <div style={{
           width: '100%', maxWidth: 420,
@@ -443,7 +450,8 @@ export default function LoginPage() {
           borderRadius: 24,
           border: '3px solid #000000',
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          padding: '2.5rem',
+          padding: 'clamp(1.25rem, 5vw, 2.5rem)',
+          boxSizing: 'border-box',
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'none' : 'translateY(20px) scale(0.98)',
           transition: 'all 0.8s cubic-bezier(0.4,0,0.2,1) 0.1s',

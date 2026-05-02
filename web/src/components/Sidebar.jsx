@@ -537,7 +537,7 @@ import {
   LayoutDashboard, ListTodo, CalendarCheck, FileText,
   Users, Briefcase, Award, Play, Sparkles, ChevronRight,
   Settings, UserPlus, ClipboardList, Video,
-  LucideSquareSlash,
+  LucideSquareSlash, X,
 } from 'lucide-react';
 
 const navGroups = {
@@ -608,22 +608,38 @@ const navGroups = {
   ],
 };
 
-export default function Sidebar() {
+export default function Sidebar({ mobileDrawer = false, open = false, onClose }) {
   const user = useAuthStore((s) => s.user);
   const { pathname } = useLocation();
   const groups = navGroups[user?.role] || navGroups.student;
   const [hovered, setHovered] = useState(null);
 
+  const drawerStyle = mobileDrawer
+    ? {
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        zIndex: 100,
+        height: '100dvh',
+        maxHeight: '100dvh',
+        transform: open ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.26s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: open ? '12px 0 40px rgba(0,0,0,0.35)' : 'none',
+      }
+    : {};
+
   return (
     <aside style={{
       width: 256,
+      maxWidth: 'min(256px, 88vw)',
       background: 'var(--navy-900)',
       display: 'flex',
       flexDirection: 'column',
-      height: '100vh',
-      position: 'relative',
+      height: mobileDrawer ? '100dvh' : '100vh',
+      position: mobileDrawer ? 'fixed' : 'relative',
       flexShrink: 0,
       borderRight: '1px solid rgba(255,255,255,0.06)',
+      ...drawerStyle,
     }}>
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 180,
@@ -648,7 +664,7 @@ export default function Sidebar() {
           }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff' }}>MR</span>
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem',
               color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1,
@@ -657,11 +673,44 @@ export default function Sidebar() {
               Management System
             </div>
           </div>
+          {mobileDrawer && (
+            <button
+              type="button"
+              aria-label="Close navigation"
+              onClick={onClose}
+              style={{
+                marginLeft: 'auto',
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'rgba(255,255,255,0.85)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <nav style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '1rem 0.75rem',
+        paddingBottom: mobileDrawer ? 'max(1rem, env(safe-area-inset-bottom, 12px))' : '1rem',
+        WebkitOverflowScrolling: 'touch',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem',
+      }}
+      >
         {groups.map((group) => (
           <div key={group.label}>
             <div style={{
@@ -678,6 +727,7 @@ export default function Sidebar() {
                   <NavLink
                     key={to}
                     to={to}
+                    onClick={() => mobileDrawer && onClose?.()}
                     onMouseEnter={() => setHovered(to)}
                     onMouseLeave={() => setHovered(null)}
                     style={{

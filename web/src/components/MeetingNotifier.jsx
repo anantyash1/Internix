@@ -22,8 +22,10 @@ function MeetingToast({ meeting, onClose }) {
         border: '1.5px solid rgba(37,99,235,0.25)',
         boxShadow: '0 16px 48px rgba(37,99,235,0.18), 0 4px 12px rgba(0,0,0,0.08)',
         padding: '1.125rem 1.25rem',
-        width: 340,
+        width: 'min(340px, calc(100vw - 2rem))',
+        maxWidth: '100%',
         position: 'relative',
+        boxSizing: 'border-box',
         overflow: 'hidden',
         animation: 'slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1) both',
       }}
@@ -162,10 +164,15 @@ export default function MeetingNotifier() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 300,
+      position: 'fixed',
+      zIndex: 300,
+      bottom: 'max(18px, env(safe-area-inset-bottom))',
+      right: 'max(14px, env(safe-area-inset-right))',
+      left: 'max(14px, env(safe-area-inset-left))',
       display: 'flex', flexDirection: 'column', gap: '0.75rem',
       alignItems: 'flex-end',
-    }}>
+    }}
+    >
       {visible.map(meeting => (
         <MeetingToast
           key={meeting._id}

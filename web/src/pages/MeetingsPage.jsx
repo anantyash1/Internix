@@ -320,7 +320,7 @@ export default function MeetingsPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/meetings/all');
+      const { data } = await api.get('/meetings');
       setMeetings(data.meetings || []);
     } catch { toast.error('Failed to load meetings'); }
     setLoading(false);

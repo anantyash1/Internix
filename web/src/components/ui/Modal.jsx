@@ -12,26 +12,40 @@ export default function Modal({ isOpen, onClose, title, children, width = 520 })
 
   return (
     <div
+      className="modal-backdrop-root"
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignContent: 'center',
+        padding: 'max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left))',
         background: 'rgba(15,23,42,0.5)',
         backdropFilter: 'blur(4px)',
         animation: 'fadeIn 0.18s ease both',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <div
+        className="modal-panel"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#ffffff',
           borderRadius: 'var(--radius-xl)',
-          width: '100%', maxWidth: width,
-          maxHeight: '90vh',
-          display: 'flex', flexDirection: 'column',
+          width: '100%',
+          maxWidth: width,
+          maxHeight: 'min(90vh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.25rem))',
+          margin: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
           boxShadow: 'var(--shadow-xl), 0 0 0 1px rgba(0,0,0,0.06)',
           animation: 'scaleIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header */}

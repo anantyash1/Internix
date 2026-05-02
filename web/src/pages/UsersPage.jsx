@@ -4,7 +4,7 @@ import useUserStore from '../store/userStore';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Modal from '../components/ui/Modal';
 import toast from 'react-hot-toast';
-import { Users, Search, UserCog, Trash2, Filter } from 'lucide-react';
+import { Users, Search, UserCog, Trash2, Lock } from 'lucide-react';
 
 const ROLE_STYLE = {
   admin:  { cls: 'badge-violet', dot: 'var(--violet-500)', gradient: 'linear-gradient(135deg, #ede9fe, #f5f3ff)' },
@@ -12,7 +12,7 @@ const ROLE_STYLE = {
   student:{ cls: 'badge-blue',   dot: 'var(--blue-500)',   gradient: 'linear-gradient(135deg, #dbeafe, #eff6ff)' },
 };
 
-function UserRow({ u, currentUser, onAssign, onDelete }) {
+function UserRow({ u, currentUser, onAssign, onDelete, onResetPassword }) {
   const [hovered, setHovered] = useState(false);
   const rs = ROLE_STYLE[u.role] || ROLE_STYLE.student;
 
@@ -75,6 +75,11 @@ function UserRow({ u, currentUser, onAssign, onDelete }) {
                 <UserCog size={14} />
               </button>
             )}
+            {(u.role === 'student' || u.role === 'mentor') && (
+              <button type="button" onClick={() => onResetPassword(u)} className="btn-icon" title="Reset password">
+                <Lock size={14} />
+              </button>
+            )}
             <button onClick={() => onDelete(u._id)} className="btn-icon danger" title="Delete user">
               <Trash2 size={14} />
             </button>
@@ -87,13 +92,17 @@ function UserRow({ u, currentUser, onAssign, onDelete }) {
 
 export default function UsersPage() {
   const user = useAuthStore((s) => s.user);
-  const { users, loading, fetchUsers, assignMentor, deleteUser } = useUserStore();
+  const { users, loading, fetchUsers, assignMentor, deleteUser, resetUserPassword } = useUserStore();
   const [search,     setSearch]     = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [assignId,   setAssignId]   = useState(null);
   const [mentors,    setMentors]    = useState([]);
   const [selMentor,  setSelMentor]  = useState('');
   const [assigning,  setAssigning]  = useState(false);
+  const [resetUser,  setResetUser]  = useState(null);
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchUsers({ search, role: roleFilter }), 300);
@@ -126,6 +135,39 @@ export default function UsersPage() {
     if (!confirm('Delete this user? This action cannot be undone.')) return;
     try { await deleteUser(id); toast.success('User deleted'); }
     catch { toast.error('Failed to delete'); }
+  };
+
+  const openResetPassword = (u) => {
+    setResetUser(u);
+    setNewPw('');
+    setConfirmPw('');
+  };
+
+  const closeResetPassword = () => {
+    setResetUser(null);
+    setNewPw('');
+    setConfirmPw('');
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    if (!resetUser) return;
+    if (newPw.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setResetting(true);
+    try {
+      await resetUserPassword(resetUser._id, newPw);
+      toast.success('Password updated');
+      closeResetPassword();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reset password');
+    }
+    setResetting(false);
   };
 
   if (loading) return <LoadingSpinner label="Loading users…" />;
@@ -201,7 +243,8 @@ export default function UsersPage() {
           </div>
         </div>
       ) : (
-        <div className="card animate-fade-up stagger-2" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card animate-fade-up stagger-2" style={{ padding: 0 }}>
+          <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
@@ -215,12 +258,70 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <UserRow key={u._id} u={u} currentUser={user} onAssign={openAssign} onDelete={handleDelete} />
+                <UserRow
+                  key={u._id}
+                  u={u}
+                  currentUser={user}
+                  onAssign={openAssign}
+                  onDelete={handleDelete}
+                  onResetPassword={openResetPassword}
+                />
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
+
+      {/* Reset password (admin) */}
+      <Modal
+        isOpen={!!resetUser}
+        onClose={closeResetPassword}
+        title={resetUser ? `Reset password — ${resetUser.name}` : 'Reset password'}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {resetUser && (
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--slate-500)' }}>
+              Set a new password for <strong style={{ color: 'var(--slate-700)' }}>{resetUser.email}</strong>. They will sign in with it on the next visit.
+            </p>
+          )}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+              New password
+            </label>
+            <input
+              type="password"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              className="input-field"
+              autoComplete="new-password"
+              placeholder="At least 6 characters"
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+              Confirm password
+            </label>
+            <input
+              type="password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              className="input-field"
+              autoComplete="new-password"
+              placeholder="Repeat password"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleResetPasswordSubmit}
+            disabled={resetting || !newPw || !confirmPw}
+            className="btn-primary"
+            style={{ justifyContent: 'center', padding: '0.625rem' }}
+          >
+            {resetting ? 'Updating…' : 'Update password'}
+          </button>
+        </div>
+      </Modal>
 
       {/* Assign mentor modal */}
       <Modal isOpen={!!assignId} onClose={() => setAssignId(null)} title="Assign mentor">

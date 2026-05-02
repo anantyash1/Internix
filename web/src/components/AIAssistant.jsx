@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import useAIStore from '../store/aiStore';
 import useAuthStore from '../store/authStore';
-import { Sparkles, X, Send, RefreshCw, Minimize2 } from 'lucide-react';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { Sparkles, X, Send, RefreshCw } from 'lucide-react';
 
 const BOT_ICON = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -61,6 +62,7 @@ function Message({ msg, isNew }) {
 }
 
 export default function AIAssistant() {
+  const isNarrowScreen = useMediaQuery('(max-width: 560px)');
   const [open,    setOpen]    = useState(false);
   const [input,   setInput]   = useState('');
   const [prevLen, setPrevLen] = useState(0);
@@ -93,12 +95,17 @@ export default function AIAssistant() {
     <>
       {/* FAB */}
       <button
+        type="button"
         onClick={() => setOpen(true)}
         style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 50,
+          position: 'fixed',
+          zIndex: 50,
+          bottom: isNarrowScreen ? 'max(14px, env(safe-area-inset-bottom))' : 28,
+          right: isNarrowScreen ? 'max(14px, env(safe-area-inset-right))' : 28,
           display: open ? 'none' : 'flex',
           alignItems: 'center', gap: '0.5rem',
-          padding: '0.6875rem 1.25rem',
+          padding: isNarrowScreen ? '0.625rem 0.875rem' : '0.6875rem 1.25rem',
+          maxWidth: isNarrowScreen ? 'calc(100vw - 28px)' : 'none',
           background: 'linear-gradient(135deg, #1d4ed8, #2563eb)',
           color: '#ffffff',
           border: 'none',
@@ -120,15 +127,31 @@ export default function AIAssistant() {
       {/* Panel */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 60,
-          width: 380, height: 580,
+          position: 'fixed',
+          zIndex: 60,
+          ...(isNarrowScreen
+            ? {
+                left: 'max(10px, env(safe-area-inset-left))',
+                right: 'max(10px, env(safe-area-inset-right))',
+                bottom: 'max(14px, env(safe-area-inset-bottom))',
+                top: 'auto',
+                width: 'auto',
+                height: 'min(580px, 78dvh)',
+                maxHeight: '78dvh',
+              }
+            : {
+                bottom: 24,
+                right: 24,
+                width: 380,
+                height: 580,
+              }),
           background: 'var(--slate-50)',
           borderRadius: 'var(--radius-xl)',
           boxShadow: 'var(--shadow-xl), 0 0 0 1px rgba(0,0,0,0.07)',
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
           animation: 'scaleIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
-          transformOrigin: 'bottom right',
+          transformOrigin: isNarrowScreen ? 'bottom center' : 'bottom right',
         }}>
           {/* Header */}
           <div style={{

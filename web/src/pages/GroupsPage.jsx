@@ -308,7 +308,7 @@ export default function GroupsPage() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '0.875rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '0.875rem' }}>
           {filteredGroups.map((g, i) => (
             <GroupCard
               key={g._id} group={g} user={user} index={i}

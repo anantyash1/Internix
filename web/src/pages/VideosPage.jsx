@@ -274,9 +274,10 @@ function UploadTrackedPlayer({ video, onSync }) {
     const player = videoRef.current;
     if (!player) return;
 
-    if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed) {
+    // Only mark as skipped if player is currently playing (not paused)
+    if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed && !player.paused) {
       skippedRef.current = false;
-    } else if (player.currentTime > lastTimeRef.current + 2.25) {
+    } else if (player.currentTime > lastTimeRef.current + 2.25 && !player.paused) {
       skippedRef.current = true;
     }
 
@@ -292,19 +293,28 @@ function UploadTrackedPlayer({ video, onSync }) {
       return;
     }
 
+    // Only mark skip if seeking forward more than 2 seconds
     if (player.currentTime > lastTimeRef.current + 2.25) {
       skippedRef.current = true;
+    }
+    
+    // Resume syncing if player is playing
+    if (!player.paused) {
+      startSyncing();
     }
   };
 
   return (
     <video
+      key={video._id}
       ref={videoRef}
       src={mediaUrl}
       controls
       controlsList="nodownload"
       style={{ width: '100%', height: '100%', display: 'block' }}
-      onPlay={startSyncing}
+      onPlay={() => {
+        startSyncing();
+      }}
       onPause={() => {
         stopSyncing();
         void syncProgress(false);
@@ -789,8 +799,8 @@ export default function VideosPage() {
           </div>
         </div>
       ) : (
-        <div className="animate-fade-up stagger-2" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.25rem', alignItems: 'flex-start' }}>
-          <div className="card" style={{ padding: '1.25rem' }}>
+        <div className="animate-fade-up stagger-2 responsive-grid-sidebar">
+          <div className="card" style={{ padding: '1.25rem', minWidth: 0, width: '100%' }}>
             {selected ? (
               <VideoPlayerPanel video={selected} user={user} onSync={handleSyncProgress} />
             ) : (
@@ -800,7 +810,7 @@ export default function VideosPage() {
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 0, width: '100%', maxHeight: 'min(50vh, 420px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: '0.25rem', padding: '0 0.125rem' }}>
               Playlist · {videos.length}
             </div>

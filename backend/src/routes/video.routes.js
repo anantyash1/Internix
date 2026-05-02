@@ -19,7 +19,7 @@ router.get('/', getVideos);
 router.post('/link', authorize('mentor', 'admin'), createVideoLink);
 router.post('/upload', authorize('mentor', 'admin'), upload.single('video'), uploadVideoFile);
 router.delete('/:id', authorize('mentor', 'admin'), deleteVideo);
-router.post('/:id/progress', authorize('student'), syncVideoProgress);
+router.post('/:id/progress', syncVideoProgress);
 router.get('/progress/:studentId', authorize('mentor', 'admin'), getStudentProgress);
 
 module.exports = router;

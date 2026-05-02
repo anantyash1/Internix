@@ -132,11 +132,7 @@ export default function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"    element={<DashboardPage />} />
         <Route path="tasks"        element={<TasksPage />} />
-        <Route path="meetings"      element={
-          <ProtectedRoute roles={['admin', 'mentor']}>
-            <MeetingsPage />
-          </ProtectedRoute>
-        } />
+        <Route path="meetings"      element={<MeetingsPage />} />
         <Route path="attendance"   element={<AttendancePage />} />
         <Route path="reports"      element={<ReportsPage />} />
         <Route path="certificates" element={<CertificatesPage />} />

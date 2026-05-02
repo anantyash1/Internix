@@ -77,7 +77,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           content: const Row(children: [
             Icon(Icons.check_circle_rounded, color: Colors.white),
             SizedBox(width: 10),
-            Text('Student onboarded successfully!'),
+            Expanded(
+              child: Text('Student onboarded successfully!'),
+            ),
           ]),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
@@ -239,6 +241,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               // Mentor dropdown
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: _selectedMentor,
                 decoration: _dec('Assign Mentor', Icons.supervisor_account_rounded,
                     hint: 'Select a mentor (optional)'),
@@ -246,9 +249,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const DropdownMenuItem(value: null, child: Text('None')),
                   ..._mentors.map((m) => DropdownMenuItem(
                         value: m.id,
-                        child: SizedBox(
-                          width: 240,
-                          child: Row(
+                        child: Row(
                           children: [
                             CircleAvatar(
                               radius: 12,
@@ -261,9 +262,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 8),
-                            Text(m.name, overflow: TextOverflow.ellipsis),
+                            Expanded(
+                              child: Text(
+                                m.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
-                        ),
                         ),
                       )),
                 ],
@@ -273,6 +279,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               // Internship dropdown
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: _selectedInternship,
                 decoration: _dec(
                     'Assign Internship', Icons.work_rounded,
@@ -281,12 +288,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const DropdownMenuItem(value: null, child: Text('None')),
                   ...ip.internships.map((i) => DropdownMenuItem(
                         value: i.id,
-                        child: SizedBox(
-                          width: 240,
-                          child: Text(
-                            i.title,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        child: Text(
+                          i.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       )),
                 ],
@@ -334,9 +339,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(text,
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       );
 }
