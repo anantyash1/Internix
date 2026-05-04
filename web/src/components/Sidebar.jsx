@@ -655,14 +655,12 @@ export default function Sidebar({ mobileDrawer = false, open = false, onClose })
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
           <div style={{
-            width: 34, height: 34,
-            background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+            width: 64, height: 64,
             borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(37,99,235,0.45)',
             flexShrink: 0,
           }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff' }}>MR</span>
+            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
