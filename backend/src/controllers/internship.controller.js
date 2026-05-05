@@ -1,29 +1,55 @@
 const Internship = require('../models/Internship');
 const User = require('../models/User');
 
+// Helper function to calculate internship status based on dates
+const calculateStatus = (startDate, endDate) => {
+  const now = new Date();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  if (now < start) return 'upcoming';
+  if (now >= start && now <= end) return 'active';
+  return 'completed';
+};
+
 // GET /api/internships
 const getInternships = async (req, res, next) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const filter = {};
-    if (status) filter.status = status;
 
     if (req.user.role === 'mentor') {
       filter.mentor = req.user._id;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [internships, total] = await Promise.all([
-      Internship.find(filter)
-        .populate('mentor', 'name email')
-        .populate('students', 'name email')
-        .skip(skip)
-        .limit(parseInt(limit))
-        .sort({ createdAt: -1 }),
-      Internship.countDocuments(filter),
-    ]);
+    const internships = await Internship.find(filter)
+      .populate('mentor', 'name email')
+      .populate('students', 'name email')
+      .sort({ createdAt: -1 });
 
-    res.json({ internships, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
+    // Calculate status for each internship based on current date
+    const internshipsWithCalculatedStatus = internships.map(i => ({
+      ...i.toObject(),
+      status: calculateStatus(i.startDate, i.endDate),
+    }));
+
+    // Filter by status if provided
+    let filtered = internshipsWithCalculatedStatus;
+    if (status) {
+      filtered = internshipsWithCalculatedStatus.filter(i => i.status === status);
+    }
+
+    // Apply pagination
+    const paginatedInternships = filtered.slice(skip, skip + parseInt(limit));
+    const total = filtered.length;
+
+    res.json({ 
+      internships: paginatedInternships, 
+      total, 
+      page: parseInt(page), 
+      pages: Math.ceil(total / parseInt(limit)) 
+    });
   } catch (error) {
     next(error);
   }
@@ -39,6 +65,9 @@ const createInternship = async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid mentor' });
     }
 
+    // Calculate status based on dates
+    const calculatedStatus = calculateStatus(startDate, endDate);
+
     const internship = await Internship.create({
       title,
       description,
@@ -47,6 +76,7 @@ const createInternship = async (req, res, next) => {
       endDate: new Date(endDate),
       mentor,
       maxStudents,
+      status: calculatedStatus,
     });
 
     const populated = await internship.populate('mentor', 'name email');
@@ -59,7 +89,17 @@ const createInternship = async (req, res, next) => {
 // PUT /api/internships/:id
 const updateInternship = async (req, res, next) => {
   try {
-    const internship = await Internship.findByIdAndUpdate(req.params.id, req.body, {
+    let updateData = { ...req.body };
+    
+    // If dates are being updated, recalculate status
+    if (req.body.startDate || req.body.endDate) {
+      const internship = await Internship.findById(req.params.id);
+      const startDate = req.body.startDate ? new Date(req.body.startDate) : internship.startDate;
+      const endDate = req.body.endDate ? new Date(req.body.endDate) : internship.endDate;
+      updateData.status = calculateStatus(startDate, endDate);
+    }
+
+    const internship = await Internship.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     })

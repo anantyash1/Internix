@@ -98,9 +98,9 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                 )
               : Row(
                   children: [
-                    // Student list panel
+                    // Student list panel - narrower
                     Container(
-                      width: 200,
+                      width: 130,
                       decoration: BoxDecoration(
                         border: Border(
                           right: BorderSide(
@@ -112,48 +112,49 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                            padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
                             child: Text(
-                              'My Students (${up.users.length})',
-                              style: theme.textTheme.labelLarge
+                              'Students',
+                              style: theme.textTheme.labelSmall
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                           Expanded(
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
                               itemCount: up.users.length,
                               itemBuilder: (ctx, i) {
                                 final u      = up.users[i];
                                 final active = _selected?.id == u.id;
                                 return InkWell(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(8),
                                   onTap: () => _loadStudentDetail(u),
                                   child: Container(
-                                    margin: const EdgeInsets.only(bottom: 4),
+                                    margin: const EdgeInsets.only(bottom: 3),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 8),
+                                        horizontal: 8, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: active
-                                          ? theme.colorScheme.primary.withOpacity(0.1)
+                                          ? theme.colorScheme.primary.withOpacity(0.15)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(8),
                                       border: active
                                           ? Border.all(
-                                              color: theme.colorScheme.primary.withOpacity(0.3))
+                                              color: theme.colorScheme.primary.withOpacity(0.4))
                                           : null,
                                     ),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         CircleAvatar(
-                                          radius: 16,
+                                          radius: 14,
                                           backgroundColor: active
-                                              ? theme.colorScheme.primary.withOpacity(0.2)
+                                              ? theme.colorScheme.primary.withOpacity(0.3)
                                               : theme.colorScheme.surfaceContainerHighest,
                                           child: Text(
                                             u.initials,
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                               color: active
                                                   ? theme.colorScheme.primary
@@ -161,13 +162,14 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             u.name.split(' ').first,
                                             style: theme.textTheme.bodySmall?.copyWith(
                                               fontWeight: active
-                                                  ? FontWeight.bold : FontWeight.normal,
+                                                  ? FontWeight.w600 : FontWeight.w400,
+                                              fontSize: 11,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -184,7 +186,7 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                       ),
                     ),
 
-                    // Detail panel
+                    // Detail panel - larger and more spacious
                     Expanded(
                       child: _selected == null
                           ? Center(
@@ -204,47 +206,49 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                           : _loadingDetail
                               ? const Center(child: CircularProgressIndicator())
                               : SingleChildScrollView(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(20),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // Student header
+                                      // Student header - more compact
                                       Container(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(14),
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(colors: [
-                                            theme.colorScheme.primary.withOpacity(0.1),
+                                            theme.colorScheme.primary.withOpacity(0.12),
                                             theme.colorScheme.primary.withOpacity(0.04),
                                           ]),
-                                          borderRadius: BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Row(
                                           children: [
                                             CircleAvatar(
-                                              radius: 24,
+                                              radius: 20,
                                               backgroundColor:
-                                                  theme.colorScheme.primary.withOpacity(0.2),
+                                                  theme.colorScheme.primary.withOpacity(0.25),
                                               child: Text(_selected!.initials,
                                                   style: TextStyle(
                                                     color: theme.colorScheme.primary,
                                                     fontWeight: FontWeight.bold,
-                                                    fontSize: 18,
+                                                    fontSize: 16,
                                                   )),
                                             ),
-                                            const SizedBox(width: 12),
+                                            const SizedBox(width: 14),
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Text(_selected!.name,
-                                                      style: theme.textTheme.titleMedium
+                                                      style: theme.textTheme.titleSmall
                                                           ?.copyWith(fontWeight: FontWeight.bold),
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis),
+                                                  const SizedBox(height: 2),
                                                   Text(_selected!.email,
                                                       style: theme.textTheme.bodySmall?.copyWith(
                                                         color: theme.colorScheme.onSurface
                                                             .withOpacity(0.55),
+                                                        fontSize: 11,
                                                       ),
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis),
@@ -255,20 +259,20 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                                         ),
                                       ),
 
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 20),
                                       Text('Performance Overview',
-                                          style: theme.textTheme.titleSmall
+                                          style: theme.textTheme.titleMedium
                                               ?.copyWith(fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: 14),
 
-                                      // Stats grid
+                                      // Stats grid - larger cards
                                       GridView.count(
                                         crossAxisCount: 2,
                                         shrinkWrap: true,
                                         physics: const NeverScrollableScrollPhysics(),
-                                        mainAxisSpacing: 10,
-                                        crossAxisSpacing: 10,
-                                        childAspectRatio: 1.5,
+                                        mainAxisSpacing: 14,
+                                        crossAxisSpacing: 14,
+                                        childAspectRatio: 1.3,
                                         children: [
                                           _statCard(
                                             'Tasks',
@@ -305,7 +309,7 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
                                         ],
                                       ),
 
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 18),
 
                                       // Progress bar
                                       _progressSection(theme),
@@ -321,33 +325,35 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
   Widget _statCard(String title, String value, IconData icon, Color color,
       String sub, ThemeData theme) =>
       Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: color.withOpacity(0.18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 6),
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 7),
                 Text(title,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.55),
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: FontWeight.w500,
                     )),
               ],
             ),
             const Spacer(),
             Text(value,
-                style: theme.textTheme.titleMedium
+                style: theme.textTheme.headlineSmall
                     ?.copyWith(fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 4),
             Text(sub,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
-                  fontSize: 10,
+                  color: theme.colorScheme.onSurface.withOpacity(0.45),
+                  fontSize: 11,
                 )),
           ],
         ),
@@ -359,10 +365,13 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
     final pct       = total > 0 ? completed / total : 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,28 +380,28 @@ class _MentorSummaryScreenState extends State<MentorSummaryScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Task Completion',
-                  style: theme.textTheme.labelLarge
+                  style: theme.textTheme.titleSmall
                       ?.copyWith(fontWeight: FontWeight.bold)),
               Text('${(pct * 100).round()}%',
-                  style: theme.textTheme.labelLarge?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   )),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: pct,
-              minHeight: 10,
+              minHeight: 12,
               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text('$completed of $total tasks completed',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                color: theme.colorScheme.onSurface.withOpacity(0.55),
               )),
         ],
       ),
