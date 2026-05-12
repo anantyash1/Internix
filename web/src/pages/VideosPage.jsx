@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useVideoStore from '../store/videoStore';
 import api from '../lib/axios';
@@ -33,7 +33,8 @@ function resolveMediaUrl(rawUrl) {
 
   try {
     const resolved = new URL(trimmed, API_ORIGIN);
-    if (resolved.protocol === 'http:') {
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(resolved.hostname);
+    if (resolved.protocol === 'http:' && !isLocalHost) {
       resolved.protocol = 'https:';
     }
     return resolved.toString();
@@ -77,6 +78,69 @@ function extractYoutubeVideoId(url) {
     /(?:[?&]v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/
   );
   return match?.[1] || '';
+}
+
+function isCloudinaryVideoUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.includes('res.cloudinary.com') && parsed.pathname.includes('/video/upload/');
+  } catch {
+    return false;
+  }
+}
+
+function injectCloudinaryTransform(url, transformation) {
+  if (!url || !transformation || !isCloudinaryVideoUrl(url)) return url;
+  return url.replace('/video/upload/', `/video/upload/${transformation}/`);
+}
+
+function getFileExtension(url) {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    const segment = parsed.pathname.split('/').filter(Boolean).pop() || '';
+    const ext = segment.split('.').pop() || '';
+    return ext.toLowerCase();
+  } catch {
+    const segment = url.split('/').pop() || '';
+    const ext = segment.split('.').pop() || '';
+    return ext.toLowerCase();
+  }
+}
+
+function guessVideoMimeType(url) {
+  const ext = getFileExtension(url);
+  if (ext === 'mp4' || ext === 'm4v') return 'video/mp4';
+  if (ext === 'webm') return 'video/webm';
+  if (ext === 'ogv' || ext === 'ogg') return 'video/ogg';
+  if (ext === 'mov') return 'video/quicktime';
+  if (ext === 'avi') return 'video/x-msvideo';
+  if (ext === 'mkv') return 'video/x-matroska';
+  return 'video/mp4';
+}
+
+function buildUploadSourceCandidates(url) {
+  if (!url) return [];
+  const resolved = resolveMediaUrl(url);
+  if (!resolved) return [];
+
+  if (!isCloudinaryVideoUrl(resolved)) {
+    return [{ url: resolved, type: guessVideoMimeType(resolved) }];
+  }
+
+  const candidates = [
+    { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_mp4,vc_auto'), type: 'video/mp4' },
+    { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_webm,vc_auto'), type: 'video/webm' },
+    { url: resolved, type: guessVideoMimeType(resolved) },
+  ];
+
+  const seen = new Set();
+  return candidates.filter(({ url: candidateUrl }) => {
+    if (!candidateUrl || seen.has(candidateUrl)) return false;
+    seen.add(candidateUrl);
+    return true;
+  });
 }
 
 function loadYoutubeApi() {
@@ -229,7 +293,17 @@ function UploadTrackedPlayer({ video, onSync }) {
   const intervalRef = useRef(null);
   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
   const skippedRef = useRef(Boolean(video?.progress?.skipped));
-  const mediaUrl = resolveMediaUrl(video.url);
+  const sourceCandidates = useMemo(() => buildUploadSourceCandidates(video.url), [video.url]);
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+  const [playbackFailed, setPlaybackFailed] = useState(false);
+
+  const activeSource = sourceCandidates[activeSourceIndex] || null;
+  const mediaUrl = activeSource?.url || '';
+
+  useEffect(() => {
+    setActiveSourceIndex(0);
+    setPlaybackFailed(false);
+  }, [video?._id]);
 
   useEffect(() => {
     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
@@ -245,6 +319,7 @@ function UploadTrackedPlayer({ video, onSync }) {
   }, []);
 
   const syncProgress = async (isEnded = false) => {
+    if (typeof onSync !== 'function') return;
     const player = videoRef.current;
     if (!player) return;
 
@@ -257,6 +332,7 @@ function UploadTrackedPlayer({ video, onSync }) {
   };
 
   const startSyncing = () => {
+    if (typeof onSync !== 'function') return;
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       void syncProgress(false);
@@ -304,13 +380,45 @@ function UploadTrackedPlayer({ video, onSync }) {
     }
   };
 
+  const handlePlaybackError = () => {
+    const nextIndex = activeSourceIndex + 1;
+    if (nextIndex >= sourceCandidates.length) {
+      setPlaybackFailed(true);
+      return;
+    }
+    stopSyncing();
+    setActiveSourceIndex(nextIndex);
+  };
+
+  if (playbackFailed || !mediaUrl) {
+    const rawUrl = resolveMediaUrl(video.url) || video.url;
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            This video format is not supported by your browser.
+          </div>
+          <a
+            href={rawUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+          >
+            Open video directly
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <video
-      key={video._id}
+      key={`${video._id}-${activeSourceIndex}`}
       ref={videoRef}
       src={mediaUrl}
       controls
       controlsList="nodownload"
+      preload="metadata"
       style={{ width: '100%', height: '100%', display: 'block' }}
       onPlay={() => {
         startSyncing();
@@ -325,6 +433,7 @@ function UploadTrackedPlayer({ video, onSync }) {
       }}
       onSeeking={handleSeeking}
       onTimeUpdate={handleTimeUpdate}
+      onError={handlePlaybackError}
     />
   );
 }
@@ -338,11 +447,18 @@ function YoutubeTrackedPlayer({ video, onSync }) {
   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
   const skippedRef = useRef(Boolean(video?.progress?.skipped));
   const lastSyncAtRef = useRef(0);
+  const onSyncRef = useRef(onSync);
+  const [ytBlockedError, setYtBlockedError] = useState('');
+
+  useEffect(() => {
+    onSyncRef.current = onSync;
+  }, [onSync]);
 
   useEffect(() => {
     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
     skippedRef.current = Boolean(video?.progress?.skipped);
     lastSyncAtRef.current = 0;
+    setYtBlockedError('');
   }, [video?._id, video?.progress?.lastPositionSeconds, video?.progress?.skipped]);
 
   useEffect(() => {
@@ -359,10 +475,11 @@ function YoutubeTrackedPlayer({ video, onSync }) {
     };
 
     const syncFromPlayer = async (isEnded = false) => {
+      if (typeof onSyncRef.current !== 'function') return;
       const player = playerRef.current;
       if (!player?.getCurrentTime || !player?.getDuration) return;
 
-      await onSync(video._id, {
+      await onSyncRef.current(video._id, {
         currentTime: player.getCurrentTime() || 0,
         duration: player.getDuration() || 0,
         hasSkipped: skippedRef.current,
@@ -408,16 +525,23 @@ function YoutubeTrackedPlayer({ video, onSync }) {
           playsinline: 1,
         },
         events: {
+          onError: (event) => {
+            // 2: invalid parameter, 5: HTML5 player issue, 100/101/150: unavailable or embedding blocked.
+            const code = Number(event?.data);
+            const blockedCodes = new Set([2, 5, 100, 101, 150]);
+            if (blockedCodes.has(code)) {
+              setYtBlockedError(`YouTube playback error (${code}). Open this video directly on YouTube.`);
+            }
+          },
           onStateChange: (event) => {
             if (event.data === window.YT.PlayerState.PLAYING) {
-              startPolling();
+              if (typeof onSyncRef.current === 'function') {
+                startPolling();
+              }
               return;
             }
 
-            if (
-              event.data === window.YT.PlayerState.PAUSED ||
-              event.data === window.YT.PlayerState.BUFFERING
-            ) {
+            if (event.data === window.YT.PlayerState.PAUSED) {
               stopPolling();
               void syncFromPlayer(false);
               return;
@@ -440,7 +564,7 @@ function YoutubeTrackedPlayer({ video, onSync }) {
       }
       playerRef.current = null;
     };
-  }, [onSync, video?._id, video?.progress?.completed, video.url]);
+  }, [video?._id, video?.progress?.completed, videoId]);
 
   if (!videoId) {
     return (
@@ -462,12 +586,33 @@ function YoutubeTrackedPlayer({ video, onSync }) {
     );
   }
 
+  if (ytBlockedError) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            {ytBlockedError}
+          </div>
+          <a
+            href={videoUrl || video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+          >
+            Open on YouTube
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return <div ref={hostRef} style={{ width: '100%', height: '100%' }} />;
 }
 
 function VideoPlayerPanel({ video, user, onSync }) {
   const isCompleted = video?.progress?.completed;
   const isSkipped = video?.progress?.skipped;
+  const canTrackProgress = user?.role === 'student';
 
   return (
     <div>
@@ -480,9 +625,9 @@ function VideoPlayerPanel({ video, user, onSync }) {
         boxShadow: 'var(--shadow-lg)',
       }}>
         {video.type === 'youtube' ? (
-          <YoutubeTrackedPlayer video={video} onSync={onSync} />
+          <YoutubeTrackedPlayer video={video} onSync={canTrackProgress ? onSync : null} />
         ) : (
-          <UploadTrackedPlayer video={video} onSync={onSync} />
+          <UploadTrackedPlayer video={video} onSync={canTrackProgress ? onSync : null} />
         )}
       </div>
 

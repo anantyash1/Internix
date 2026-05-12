@@ -75,7 +75,7 @@ function UserRow({ u, currentUser, onAssign, onDelete, onResetPassword }) {
                 <UserCog size={14} />
               </button>
             )}
-            {(u.role === 'student' || u.role === 'mentor') && (
+            {(u.role === 'student' || u.role === 'mentor' || u.role === 'admin') && (
               <button type="button" onClick={() => onResetPassword(u)} className="btn-icon" title="Reset password">
                 <Lock size={14} />
               </button>

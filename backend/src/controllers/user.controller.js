@@ -119,8 +119,8 @@ async function resetUserPassword(req, res, next) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!['student', 'mentor'].includes(user.role)) {
-      return res.status(400).json({ message: 'Only student and mentor passwords can be reset here' });
+    if (!['student', 'mentor', 'admin'].includes(user.role)) {
+      return res.status(400).json({ message: 'Only student, mentor, and admin passwords can be reset here' });
     }
 
     user.password = newPassword.trim();
