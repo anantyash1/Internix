@@ -23,15 +23,47 @@ const { errorHandler, notFound } = require('./middleware/error.middleware');
 
 const app = express();
 
+const allowedOrigins = new Set(
+  String(process.env.CLIENT_URL || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+const allowVercelPreviewOrigins =
+  String(process.env.ALLOW_VERCEL_PREVIEW_ORIGINS || 'true').toLowerCase() !== 'false';
+const vercelProjectSlug = String(process.env.VERCEL_PROJECT_SLUG || '').trim().toLowerCase();
+
+function isVercelPreviewOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== 'https:') return false;
+    if (!parsed.hostname.endsWith('.vercel.app')) return false;
+
+    if (!vercelProjectSlug) return true;
+    return (
+      parsed.hostname === `${vercelProjectSlug}.vercel.app` ||
+      parsed.hostname.startsWith(`${vercelProjectSlug}-`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+  if (allowVercelPreviewOrigins && isVercelPreviewOrigin(origin)) return true;
+  return false;
+}
+
 // Middleware
 app.use(cors({
   origin: function(origin, callback) {
-    const raw = process.env.CLIENT_URL || 'http://localhost:5173';
-    const allowed = raw.split(',').map((s) => s.trim()).filter(Boolean);
-    if (!origin || allowed.includes(origin)) callback(null, true);
-    else callback(new Error('Not allowed by CORS'));
+    callback(null, isAllowedOrigin(origin));
   },
   credentials: true,
+  optionsSuccessStatus: 204,
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
