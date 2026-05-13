@@ -516,19 +516,23 @@ function YoutubeTrackedPlayer({ video, onSync }) {
       if (cancelled || !hostRef.current) return;
 
       playerRef.current = new window.YT.Player(hostRef.current, {
+        host: 'https://www.youtube-nocookie.com',
         videoId,
         width: '100%',
         height: '100%',
         playerVars: {
+          enablejsapi: 1,
+          origin: window.location.origin,
           rel: 0,
           modestbranding: 1,
           playsinline: 1,
         },
         events: {
           onError: (event) => {
-            // 2: invalid parameter, 5: HTML5 player issue, 100/101/150: unavailable or embedding blocked.
+            // 2: invalid parameter, 100/101/150/153: unavailable or embedding blocked.
+            // 5 is often transient/noisy in browsers/extensions and should not hard-stop playback UI.
             const code = Number(event?.data);
-            const blockedCodes = new Set([2, 5, 100, 101, 150]);
+            const blockedCodes = new Set([2, 100, 101, 150, 153]);
             if (blockedCodes.has(code)) {
               setYtBlockedError(`YouTube playback error (${code}). Open this video directly on YouTube.`);
             }
