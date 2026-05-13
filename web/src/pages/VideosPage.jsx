@@ -1,3 +1,1113 @@
+// import { useEffect, useMemo, useRef, useState } from 'react';
+// import useAuthStore from '../store/authStore';
+// import useVideoStore from '../store/videoStore';
+// import api from '../lib/axios';
+// import LoadingSpinner from '../components/ui/LoadingSpinner';
+// import Modal from '../components/ui/Modal';
+// import toast from 'react-hot-toast';
+// import {
+//   AlertTriangle,
+//   BookOpen,
+//   CheckCircle,
+//   Play,
+//   Plus,
+//   RefreshCw,
+//   Trash2,
+//   Upload,
+//   Youtube,
+// } from 'lucide-react';
+
+// const API_ORIGIN = (() => {
+//   try {
+//     return new URL(api.defaults.baseURL || '/api', window.location.origin).origin;
+//   } catch {
+//     return window.location.origin;
+//   }
+// })();
+
+// function resolveMediaUrl(rawUrl) {
+//   if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+//   const trimmed = rawUrl.trim();
+//   if (!trimmed) return '';
+
+//   try {
+//     const resolved = new URL(trimmed, API_ORIGIN);
+//     const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(resolved.hostname);
+//     if (resolved.protocol === 'http:' && !isLocalHost) {
+//       resolved.protocol = 'https:';
+//     }
+//     return resolved.toString();
+//   } catch {
+//     return trimmed;
+//   }
+// }
+
+// function extractYoutubeVideoId(url) {
+//   const normalized = resolveMediaUrl(url);
+//   if (!normalized) return '';
+
+//   try {
+//     const parsed = new URL(normalized);
+//     const host = parsed.hostname.replace(/^www\./, '');
+
+//     if (host === 'youtu.be') {
+//       const id = parsed.pathname.split('/').filter(Boolean)[0] || '';
+//       return id.length === 11 ? id : '';
+//     }
+
+//     if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+//       const fromQuery = parsed.searchParams.get('v') || '';
+//       if (fromQuery.length === 11) return fromQuery;
+
+//       const segments = parsed.pathname.split('/').filter(Boolean);
+//       const markerIndex = segments.findIndex((segment) =>
+//         ['embed', 'shorts', 'live'].includes(segment)
+//       );
+
+//       if (markerIndex !== -1) {
+//         const id = segments[markerIndex + 1] || '';
+//         return id.length === 11 ? id : '';
+//       }
+//     }
+//   } catch {
+//     // Fall back to regex parsing below.
+//   }
+
+//   const match = normalized.match(
+//     /(?:[?&]v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/
+//   );
+//   return match?.[1] || '';
+// }
+
+// function isCloudinaryVideoUrl(url) {
+//   if (!url) return false;
+//   try {
+//     const parsed = new URL(url);
+//     return parsed.hostname.includes('res.cloudinary.com') && parsed.pathname.includes('/video/upload/');
+//   } catch {
+//     return false;
+//   }
+// }
+
+// function injectCloudinaryTransform(url, transformation) {
+//   if (!url || !transformation || !isCloudinaryVideoUrl(url)) return url;
+//   return url.replace('/video/upload/', `/video/upload/${transformation}/`);
+// }
+
+// function getFileExtension(url) {
+//   if (!url) return '';
+//   try {
+//     const parsed = new URL(url);
+//     const segment = parsed.pathname.split('/').filter(Boolean).pop() || '';
+//     const ext = segment.split('.').pop() || '';
+//     return ext.toLowerCase();
+//   } catch {
+//     const segment = url.split('/').pop() || '';
+//     const ext = segment.split('.').pop() || '';
+//     return ext.toLowerCase();
+//   }
+// }
+
+// function guessVideoMimeType(url) {
+//   const ext = getFileExtension(url);
+//   if (ext === 'mp4' || ext === 'm4v') return 'video/mp4';
+//   if (ext === 'webm') return 'video/webm';
+//   if (ext === 'ogv' || ext === 'ogg') return 'video/ogg';
+//   if (ext === 'mov') return 'video/quicktime';
+//   if (ext === 'avi') return 'video/x-msvideo';
+//   if (ext === 'mkv') return 'video/x-matroska';
+//   return 'video/mp4';
+// }
+
+// function buildUploadSourceCandidates(url) {
+//   if (!url) return [];
+//   const resolved = resolveMediaUrl(url);
+//   if (!resolved) return [];
+
+//   if (!isCloudinaryVideoUrl(resolved)) {
+//     return [{ url: resolved, type: guessVideoMimeType(resolved) }];
+//   }
+
+//   const candidates = [
+//     { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_mp4,vc_auto'), type: 'video/mp4' },
+//     { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_webm,vc_auto'), type: 'video/webm' },
+//     { url: resolved, type: guessVideoMimeType(resolved) },
+//   ];
+
+//   const seen = new Set();
+//   return candidates.filter(({ url: candidateUrl }) => {
+//     if (!candidateUrl || seen.has(candidateUrl)) return false;
+//     seen.add(candidateUrl);
+//     return true;
+//   });
+// }
+
+// function loadYoutubeApi() {
+//   if (window.YT?.Player) {
+//     return Promise.resolve(window.YT);
+//   }
+
+//   if (window.__internixYoutubeApiPromise) {
+//     return window.__internixYoutubeApiPromise;
+//   }
+
+//   window.__internixYoutubeApiPromise = new Promise((resolve) => {
+//     const previousReady = window.onYouTubeIframeAPIReady;
+
+//     window.onYouTubeIframeAPIReady = () => {
+//       if (typeof previousReady === 'function') {
+//         previousReady();
+//       }
+//       resolve(window.YT);
+//     };
+
+//     if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+//       const script = document.createElement('script');
+//       script.src = 'https://www.youtube.com/iframe_api';
+//       document.body.appendChild(script);
+//     }
+
+//     if (window.YT?.Player) {
+//       resolve(window.YT);
+//     }
+//   });
+
+//   return window.__internixYoutubeApiPromise;
+// }
+
+// function VideoThumbnail({ video }) {
+//   const thumbnailUrl = resolveMediaUrl(video.thumbnailUrl);
+
+//   return thumbnailUrl ? (
+//     <img
+//       src={thumbnailUrl}
+//       alt={video.title}
+//       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+//       onError={(event) => {
+//         event.currentTarget.style.display = 'none';
+//       }}
+//     />
+//   ) : (
+//     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--slate-100)', color: 'var(--slate-300)' }}>
+//       <Play size={28} />
+//     </div>
+//   );
+// }
+
+// function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
+//   const [hovered, setHovered] = useState(false);
+//   const isCompleted = video?.progress?.completed;
+//   const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
+
+//   return (
+//     <div
+//       onClick={() => onSelect(video)}
+//       onMouseEnter={() => setHovered(true)}
+//       onMouseLeave={() => setHovered(false)}
+//       style={{
+//         display: 'flex',
+//         gap: '0.75rem',
+//         alignItems: 'flex-start',
+//         padding: '0.75rem',
+//         borderRadius: 'var(--radius-md)',
+//         border: `1.5px solid ${isSelected ? 'var(--blue-400)' : hovered ? 'var(--slate-300)' : 'var(--slate-200)'}`,
+//         background: isSelected ? 'var(--blue-50)' : hovered ? 'var(--slate-50)' : '#ffffff',
+//         cursor: 'pointer',
+//         transition: 'all 180ms ease',
+//         position: 'relative',
+//       }}
+//     >
+//       <div style={{
+//         width: 80,
+//         height: 52,
+//         borderRadius: 8,
+//         overflow: 'hidden',
+//         flexShrink: 0,
+//         background: 'var(--slate-100)',
+//         position: 'relative',
+//       }}>
+//         <VideoThumbnail video={video} />
+//         {isCompleted && (
+//           <div style={{
+//             position: 'absolute',
+//             inset: 0,
+//             background: 'rgba(16,185,129,0.55)',
+//             display: 'flex',
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//           }}>
+//             <CheckCircle size={18} style={{ color: '#fff' }} />
+//           </div>
+//         )}
+//       </div>
+
+//       <div style={{ flex: 1, minWidth: 0 }}>
+//         <div style={{
+//           fontSize: '0.8125rem',
+//           fontWeight: 600,
+//           color: isSelected ? 'var(--blue-700)' : 'var(--slate-900)',
+//           lineHeight: 1.35,
+//           marginBottom: '0.25rem',
+//           display: '-webkit-box',
+//           WebkitLineClamp: 2,
+//           WebkitBoxOrient: 'vertical',
+//           overflow: 'hidden',
+//         }}>
+//           {video.title}
+//         </div>
+//         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
+//           {video.type === 'youtube'
+//             ? <Youtube size={11} style={{ color: '#ef4444' }} />
+//             : <Upload size={11} style={{ color: 'var(--blue-500)' }} />}
+//           <span style={{ fontSize: '0.6875rem', color: 'var(--slate-400)' }}>
+//             {video.type === 'youtube' ? 'YouTube' : 'Uploaded'}
+//             {video.duration ? ` · ${video.duration}` : ''}
+//           </span>
+//           {video.internship?.title && user?.role !== 'student' && (
+//             <span style={{ fontSize: '0.6875rem', color: 'var(--slate-400)' }}>
+//               · {video.internship.title}
+//             </span>
+//           )}
+//         </div>
+//       </div>
+
+//       {isMentorAdmin && hovered && (
+//         <button
+//           onClick={(event) => {
+//             event.stopPropagation();
+//             onDelete(video._id);
+//           }}
+//           className="btn-icon danger"
+//           style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26 }}
+//         >
+//           <Trash2 size={12} />
+//         </button>
+//       )}
+//     </div>
+//   );
+// }
+
+// function UploadTrackedPlayer({ video, onSync }) {
+//   const videoRef = useRef(null);
+//   const intervalRef = useRef(null);
+//   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
+//   const skippedRef = useRef(Boolean(video?.progress?.skipped));
+//   const sourceCandidates = useMemo(() => buildUploadSourceCandidates(video.url), [video.url]);
+//   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+//   const [playbackFailed, setPlaybackFailed] = useState(false);
+
+//   const activeSource = sourceCandidates[activeSourceIndex] || null;
+//   const mediaUrl = activeSource?.url || '';
+
+//   useEffect(() => {
+//     setActiveSourceIndex(0);
+//     setPlaybackFailed(false);
+//   }, [video?._id]);
+
+//   useEffect(() => {
+//     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
+//     skippedRef.current = Boolean(video?.progress?.skipped);
+//   }, [video?._id, video?.progress?.lastPositionSeconds, video?.progress?.skipped]);
+
+//   useEffect(() => {
+//     return () => {
+//       if (intervalRef.current) {
+//         clearInterval(intervalRef.current);
+//       }
+//     };
+//   }, []);
+
+//   const syncProgress = async (isEnded = false) => {
+//     if (typeof onSync !== 'function') return;
+//     const player = videoRef.current;
+//     if (!player) return;
+
+//     await onSync(video._id, {
+//       currentTime: player.currentTime || 0,
+//       duration: Number.isFinite(player.duration) ? player.duration : 0,
+//       hasSkipped: skippedRef.current,
+//       isEnded,
+//     });
+//   };
+
+//   const startSyncing = () => {
+//     if (typeof onSync !== 'function') return;
+//     if (intervalRef.current) clearInterval(intervalRef.current);
+//     intervalRef.current = setInterval(() => {
+//       void syncProgress(false);
+//     }, 5000);
+//   };
+
+//   const stopSyncing = () => {
+//     if (intervalRef.current) {
+//       clearInterval(intervalRef.current);
+//       intervalRef.current = null;
+//     }
+//   };
+
+//   const handleTimeUpdate = () => {
+//     const player = videoRef.current;
+//     if (!player) return;
+
+//     // Only mark as skipped if player is currently playing (not paused)
+//     if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed && !player.paused) {
+//       skippedRef.current = false;
+//     } else if (player.currentTime > lastTimeRef.current + 2.25 && !player.paused) {
+//       skippedRef.current = true;
+//     }
+
+//     lastTimeRef.current = player.currentTime;
+//   };
+
+//   const handleSeeking = () => {
+//     const player = videoRef.current;
+//     if (!player) return;
+
+//     if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed) {
+//       skippedRef.current = false;
+//       return;
+//     }
+
+//     // Only mark skip if seeking forward more than 2 seconds
+//     if (player.currentTime > lastTimeRef.current + 2.25) {
+//       skippedRef.current = true;
+//     }
+    
+//     // Resume syncing if player is playing
+//     if (!player.paused) {
+//       startSyncing();
+//     }
+//   };
+
+//   const handlePlaybackError = () => {
+//     const nextIndex = activeSourceIndex + 1;
+//     if (nextIndex >= sourceCandidates.length) {
+//       setPlaybackFailed(true);
+//       return;
+//     }
+//     stopSyncing();
+//     setActiveSourceIndex(nextIndex);
+//   };
+
+//   if (playbackFailed || !mediaUrl) {
+//     const rawUrl = resolveMediaUrl(video.url) || video.url;
+//     return (
+//       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+//         <div>
+//           <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+//             This video format is not supported by your browser.
+//           </div>
+//           <a
+//             href={rawUrl}
+//             target="_blank"
+//             rel="noopener noreferrer"
+//             style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+//           >
+//             Open video directly
+//           </a>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <video
+//       key={`${video._id}-${activeSourceIndex}`}
+//       ref={videoRef}
+//       src={mediaUrl}
+//       controls
+//       controlsList="nodownload"
+//       preload="metadata"
+//       style={{ width: '100%', height: '100%', display: 'block' }}
+//       onPlay={() => {
+//         startSyncing();
+//       }}
+//       onPause={() => {
+//         stopSyncing();
+//         void syncProgress(false);
+//       }}
+//       onEnded={() => {
+//         stopSyncing();
+//         void syncProgress(true);
+//       }}
+//       onSeeking={handleSeeking}
+//       onTimeUpdate={handleTimeUpdate}
+//       onError={handlePlaybackError}
+//     />
+//   );
+// }
+
+// function YoutubeTrackedPlayer({ video, onSync }) {
+//   const hostRef = useRef(null);
+//   const playerRef = useRef(null);
+//   const pollRef = useRef(null);
+//   const videoUrl = resolveMediaUrl(video.url);
+//   const videoId = extractYoutubeVideoId(videoUrl);
+//   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
+//   const skippedRef = useRef(Boolean(video?.progress?.skipped));
+//   const lastSyncAtRef = useRef(0);
+//   const onSyncRef = useRef(onSync);
+//   const [ytBlockedError, setYtBlockedError] = useState('');
+
+//   useEffect(() => {
+//     onSyncRef.current = onSync;
+//   }, [onSync]);
+
+//   useEffect(() => {
+//     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
+//     skippedRef.current = Boolean(video?.progress?.skipped);
+//     lastSyncAtRef.current = 0;
+//     setYtBlockedError('');
+//   }, [video?._id, video?.progress?.lastPositionSeconds, video?.progress?.skipped]);
+
+//   useEffect(() => {
+//     let cancelled = false;
+//     if (!videoId) {
+//       return undefined;
+//     }
+
+//     const stopPolling = () => {
+//       if (pollRef.current) {
+//         clearInterval(pollRef.current);
+//         pollRef.current = null;
+//       }
+//     };
+
+//     const syncFromPlayer = async (isEnded = false) => {
+//       if (typeof onSyncRef.current !== 'function') return;
+//       const player = playerRef.current;
+//       if (!player?.getCurrentTime || !player?.getDuration) return;
+
+//       await onSyncRef.current(video._id, {
+//         currentTime: player.getCurrentTime() || 0,
+//         duration: player.getDuration() || 0,
+//         hasSkipped: skippedRef.current,
+//         isEnded,
+//       });
+//     };
+
+//     const pollProgress = () => {
+//       const player = playerRef.current;
+//       if (!player?.getCurrentTime || !player?.getDuration) return;
+
+//       const currentTime = player.getCurrentTime() || 0;
+
+//       if (currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed) {
+//         skippedRef.current = false;
+//       } else if (currentTime > lastTimeRef.current + 4) {
+//         skippedRef.current = true;
+//       }
+
+//       lastTimeRef.current = currentTime;
+
+//       if (Date.now() - lastSyncAtRef.current >= 5000) {
+//         lastSyncAtRef.current = Date.now();
+//         void syncFromPlayer(false);
+//       }
+//     };
+
+//     const startPolling = () => {
+//       stopPolling();
+//       pollRef.current = setInterval(pollProgress, 1000);
+//     };
+
+//     loadYoutubeApi().then(() => {
+//       if (cancelled || !hostRef.current) return;
+
+//       playerRef.current = new window.YT.Player(hostRef.current, {
+//         host: 'https://www.youtube-nocookie.com',
+//         videoId,
+//         width: '100%',
+//         height: '100%',
+//         playerVars: {
+//           enablejsapi: 1,
+//           origin: window.location.origin,
+//           rel: 0,
+//           modestbranding: 1,
+//           playsinline: 1,
+//         },
+//         events: {
+//           onError: (event) => {
+//             // 2: invalid parameter, 100/101/150/153: unavailable or embedding blocked.
+//             // 5 is often transient/noisy in browsers/extensions and should not hard-stop playback UI.
+//             const code = Number(event?.data);
+//             const blockedCodes = new Set([2, 100, 101, 150, 153]);
+//             if (blockedCodes.has(code)) {
+//               setYtBlockedError(`YouTube playback error (${code}). Open this video directly on YouTube.`);
+//             }
+//           },
+//           onStateChange: (event) => {
+//             if (event.data === window.YT.PlayerState.PLAYING) {
+//               if (typeof onSyncRef.current === 'function') {
+//                 startPolling();
+//               }
+//               return;
+//             }
+
+//             if (event.data === window.YT.PlayerState.PAUSED) {
+//               stopPolling();
+//               void syncFromPlayer(false);
+//               return;
+//             }
+
+//             if (event.data === window.YT.PlayerState.ENDED) {
+//               stopPolling();
+//               void syncFromPlayer(true);
+//             }
+//           },
+//         },
+//       });
+//     });
+
+//     return () => {
+//       cancelled = true;
+//       stopPolling();
+//       if (playerRef.current?.destroy) {
+//         playerRef.current.destroy();
+//       }
+//       playerRef.current = null;
+//     };
+//   }, [video?._id, video?.progress?.completed, videoId]);
+
+//   if (!videoId) {
+//     return (
+//       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+//         <div>
+//           <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+//             Could not play this YouTube link inside the app.
+//           </div>
+//           <a
+//             href={videoUrl || video.url}
+//             target="_blank"
+//             rel="noopener noreferrer"
+//             style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+//           >
+//             Open on YouTube
+//           </a>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (ytBlockedError) {
+//     return (
+//       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
+//         <div>
+//           <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+//             {ytBlockedError}
+//           </div>
+//           <a
+//             href={videoUrl || video.url}
+//             target="_blank"
+//             rel="noopener noreferrer"
+//             style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
+//           >
+//             Open on YouTube
+//           </a>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return <div ref={hostRef} style={{ width: '100%', height: '100%' }} />;
+// }
+
+// function VideoPlayerPanel({ video, user, onSync }) {
+//   const isCompleted = video?.progress?.completed;
+//   const isSkipped = video?.progress?.skipped;
+//   const canTrackProgress = user?.role === 'student';
+
+//   return (
+//     <div>
+//       <div style={{
+//         borderRadius: 'var(--radius-lg)',
+//         overflow: 'hidden',
+//         background: '#000',
+//         aspectRatio: '16/9',
+//         marginBottom: '1rem',
+//         boxShadow: 'var(--shadow-lg)',
+//       }}>
+//         {video.type === 'youtube' ? (
+//           <YoutubeTrackedPlayer video={video} onSync={canTrackProgress ? onSync : null} />
+//         ) : (
+//           <UploadTrackedPlayer video={video} onSync={canTrackProgress ? onSync : null} />
+//         )}
+//       </div>
+
+//       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+//         <div style={{ flex: 1 }}>
+//           <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.0625rem', color: 'var(--slate-900)', letterSpacing: '-0.025em', marginBottom: '0.25rem' }}>
+//             {video.title}
+//           </h3>
+//           {video.description && (
+//             <p style={{ fontSize: '0.8125rem', color: 'var(--slate-500)', lineHeight: 1.6, marginBottom: '0.375rem' }}>
+//               {video.description}
+//             </p>
+//           )}
+//           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: user?.role === 'student' ? '0.875rem' : 0 }}>
+//             {video.type === 'youtube'
+//               ? <span className="badge badge-red"><Youtube size={10} /> YouTube</span>
+//               : <span className="badge badge-blue"><Upload size={10} /> Uploaded</span>}
+//             {video.duration && <span className="badge badge-gray">{video.duration}</span>}
+//             {video.internship?.title && user?.role !== 'student' && (
+//               <span className="badge badge-gray">{video.internship.title}</span>
+//             )}
+//             <span style={{ fontSize: '0.75rem', color: 'var(--slate-400)' }}>by {video.createdBy?.name}</span>
+//           </div>
+
+//           {user?.role === 'student' && (
+//             <div style={{
+//               display: 'flex',
+//               gap: '0.625rem',
+//               alignItems: 'flex-start',
+//               padding: '0.875rem 1rem',
+//               borderRadius: 'var(--radius-md)',
+//               border: `1px solid ${isCompleted ? 'rgba(16,185,129,0.2)' : isSkipped ? 'rgba(245,158,11,0.25)' : 'var(--slate-200)'}`,
+//               background: isCompleted ? 'var(--emerald-50)' : isSkipped ? 'rgba(245,158,11,0.08)' : 'var(--slate-50)',
+//             }}>
+//               {isCompleted ? (
+//                 <CheckCircle size={18} style={{ color: 'var(--emerald-600)', flexShrink: 0, marginTop: 1 }} />
+//               ) : isSkipped ? (
+//                 <AlertTriangle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+//               ) : (
+//                 <Play size={18} style={{ color: 'var(--blue-500)', flexShrink: 0, marginTop: 1 }} />
+//               )}
+//               <div>
+//                 <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--slate-800)', marginBottom: '0.1875rem' }}>
+//                   {isCompleted ? 'Completed automatically' : isSkipped ? 'Skipping detected' : 'Completion happens automatically'}
+//                 </div>
+//                 <div style={{ fontSize: '0.8125rem', color: 'var(--slate-500)', lineHeight: 1.55 }}>
+//                   {isCompleted
+//                     ? 'You watched this video fully without skipping, so it has been marked as completed.'
+//                     : isSkipped
+//                       ? 'Restart from the beginning and watch the full video without skipping to complete it.'
+//                       : 'Students cannot manually mark videos complete. Watch the full video without skipping and the system will complete it for you.'}
+//                 </div>
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default function VideosPage() {
+//   const user = useAuthStore((state) => state.user);
+//   const { videos, loading, fetchVideos, createVideoLink, uploadVideo, deleteVideo, syncVideoProgress } = useVideoStore();
+//   const [selected, setSelected] = useState(null);
+//   const [showAdd, setShowAdd] = useState(false);
+//   const [addType, setAddType] = useState('youtube');
+//   const [form, setForm] = useState({ title: '', description: '', url: '', duration: '', internshipId: '' });
+//   const [fileInput, setFileInput] = useState(null);
+//   const [saving, setSaving] = useState(false);
+//   const [internships, setInternships] = useState([]);
+//   const [selectedInternship, setSelectedInternship] = useState('');
+//   const [loadingInternships, setLoadingInternships] = useState(false);
+//   const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
+
+//   useEffect(() => {
+//     if (!isMentorAdmin) {
+//       fetchVideos();
+//       return;
+//     }
+
+//     let active = true;
+//     setLoadingInternships(true);
+
+//     api.get('/internships')
+//       .then(({ data }) => {
+//         if (!active) return;
+//         const nextInternships = data.internships || [];
+//         setInternships(nextInternships);
+//         setSelectedInternship((current) => current || nextInternships[0]?._id || '');
+//       })
+//       .catch(() => {
+//         if (!active) return;
+//         toast.error('Failed to load internships');
+//       })
+//       .finally(() => {
+//         if (active) setLoadingInternships(false);
+//       });
+
+//     return () => {
+//       active = false;
+//     };
+//   }, [fetchVideos, isMentorAdmin]);
+
+//   useEffect(() => {
+//     if (isMentorAdmin) {
+//       fetchVideos(selectedInternship ? { internshipId: selectedInternship } : {});
+//     }
+//   }, [fetchVideos, isMentorAdmin, selectedInternship]);
+
+//   useEffect(() => {
+//     setSelected((current) => {
+//       if (videos.length === 0) return null;
+//       return videos.find((video) => video._id === current?._id) || videos[0];
+//     });
+//   }, [videos]);
+
+//   useEffect(() => {
+//     if (!showAdd) return;
+//     setForm((current) => ({
+//       ...current,
+//       internshipId: current.internshipId || selectedInternship || internships[0]?._id || '',
+//     }));
+//   }, [internships, selectedInternship, showAdd]);
+
+//   const completedCount = videos.filter((video) => video.progress?.completed).length;
+//   const progressPct = videos.length > 0 ? Math.round((completedCount / videos.length) * 100) : 0;
+//   const activeInternship = internships.find((internship) => internship._id === selectedInternship);
+
+//   const refreshVideos = async () => {
+//     await fetchVideos(isMentorAdmin ? (selectedInternship ? { internshipId: selectedInternship } : {}) : {});
+//   };
+
+//   const handleSave = async (event) => {
+//     event.preventDefault();
+
+//     if (isMentorAdmin && !form.internshipId) {
+//       toast.error('Select an internship for this video');
+//       return;
+//     }
+
+//     setSaving(true);
+//     try {
+//       if (addType === 'youtube') {
+//         await createVideoLink(form);
+//         toast.success('Video added');
+//       } else {
+//         if (!fileInput) {
+//           toast.error('Select a file');
+//           setSaving(false);
+//           return;
+//         }
+
+//         const uploadData = new FormData();
+//         uploadData.append('title', form.title);
+//         uploadData.append('description', form.description);
+//         uploadData.append('internshipId', form.internshipId);
+//         uploadData.append('video', fileInput);
+//         await uploadVideo(uploadData);
+//         toast.success('Video uploaded');
+//       }
+
+//       await refreshVideos();
+//       setShowAdd(false);
+//       setForm({ title: '', description: '', url: '', duration: '', internshipId: selectedInternship || internships[0]?._id || '' });
+//       setFileInput(null);
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || 'Failed to save video');
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
+
+//   const handleDelete = async (id) => {
+//     if (!confirm('Delete this video?')) return;
+//     try {
+//       await deleteVideo(id);
+//       toast.success('Video deleted');
+//       await refreshVideos();
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || 'Failed to delete');
+//     }
+//   };
+
+//   const handleSyncProgress = async (videoId, payload) => {
+//     try {
+//       const previousProgress = videos.find((video) => video._id === videoId)?.progress;
+//       const { progress } = await syncVideoProgress(videoId, payload);
+
+//       if (!previousProgress?.completed && progress?.completed) {
+//         toast.success('Video completed automatically');
+//       } else if (!previousProgress?.skipped && progress?.skipped) {
+//         toast.error('Skipping detected. Restart the video and watch it fully.');
+//       }
+
+//       setSelected((current) => (
+//         current?._id === videoId
+//           ? { ...current, progress }
+//           : current
+//       ));
+//     } catch {
+//       // Ignore noisy sync errors while the student watches the video.
+//     }
+//   };
+
+//   if (loading || loadingInternships) return <LoadingSpinner label="Loading videos..." />;
+
+//   if (user?.role === 'student' && !user?.internship) {
+//     return (
+//       <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+//         <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+//           <BookOpen size={28} style={{ color: 'var(--slate-300)' }} />
+//         </div>
+//         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//           No internship assigned yet
+//         </div>
+//         <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
+//           Ask your admin or mentor to assign you to an internship so the right videos can appear here.
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+//       <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+//         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+//           <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--rose-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(244,63,94,0.15)' }}>
+//             <BookOpen size={19} style={{ color: 'var(--rose-500)' }} />
+//           </div>
+//           <div>
+//             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>
+//               Learning Videos
+//             </div>
+//             <div style={{ fontSize: '0.8125rem', color: 'var(--slate-500)' }}>
+//               {user?.role === 'student'
+//                 ? `${user?.internship?.title || 'My internship'} · ${videos.length} videos · ${completedCount} completed`
+//                 : `${activeInternship?.title || 'All internships'} · ${videos.length} videos`}
+//             </div>
+//           </div>
+//         </div>
+
+//         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+//           {isMentorAdmin && (
+//             <select
+//               value={selectedInternship}
+//               onChange={(event) => setSelectedInternship(event.target.value)}
+//               className="input-field"
+//               style={{ minWidth: 220 }}
+//             >
+//               {internships.length === 0 ? (
+//                 <option value="">No internships found</option>
+//               ) : (
+//                 internships.map((internship) => (
+//                   <option key={internship._id} value={internship._id}>
+//                     {internship.title}
+//                   </option>
+//                 ))
+//               )}
+//             </select>
+//           )}
+
+//           {isMentorAdmin && (
+//             <button
+//               onClick={() => setShowAdd(true)}
+//               className="btn-primary"
+//               disabled={internships.length === 0}
+//             >
+//               <Plus size={15} /> Add Video
+//             </button>
+//           )}
+//         </div>
+//       </div>
+
+//       {user?.role === 'student' && videos.length > 0 && (
+//         <div className="card animate-fade-up stagger-1" style={{ padding: '1rem 1.25rem' }}>
+//           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+//             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--slate-700)' }}>Learning progress</span>
+//             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--blue-600)' }}>{progressPct}%</span>
+//           </div>
+//           <div className="progress-bar">
+//             <div className="progress-bar-fill" style={{ width: `${progressPct}%` }} />
+//           </div>
+//           <div style={{ fontSize: '0.75rem', color: 'var(--slate-400)', marginTop: '0.375rem' }}>
+//             {completedCount} of {videos.length} videos completed automatically
+//           </div>
+//         </div>
+//       )}
+
+//       {isMentorAdmin && internships.length === 0 ? (
+//         <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+//           <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+//             <BookOpen size={28} style={{ color: 'var(--slate-300)' }} />
+//           </div>
+//           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//             Create an internship first
+//           </div>
+//           <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
+//             Videos are now managed inside internships, so create or assign an internship before adding learning content.
+//           </div>
+//         </div>
+//       ) : videos.length === 0 ? (
+//         <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+//           <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+//             <Play size={28} style={{ color: 'var(--slate-300)' }} />
+//           </div>
+//           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-600)', marginBottom: '0.375rem' }}>
+//             No videos yet
+//           </div>
+//           <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
+//             {isMentorAdmin
+//               ? `Add videos for ${activeInternship?.title || 'this internship'}.`
+//               : 'Your mentor will add internship videos here.'}
+//           </div>
+//         </div>
+//       ) : (
+//         <div className="animate-fade-up stagger-2 responsive-grid-sidebar">
+//           <div className="card" style={{ padding: '1.25rem', minWidth: 0, width: '100%' }}>
+//             {selected ? (
+//               <VideoPlayerPanel video={selected} user={user} onSync={handleSyncProgress} />
+//             ) : (
+//               <div style={{ aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)', color: 'var(--slate-300)' }}>
+//                 <Play size={40} />
+//               </div>
+//             )}
+//           </div>
+
+//           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 0, width: '100%', maxHeight: 'min(50vh, 420px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+//             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--slate-400)', marginBottom: '0.25rem', padding: '0 0.125rem' }}>
+//               Playlist · {videos.length}
+//             </div>
+//             {videos.map((video) => (
+//               <VideoListItem
+//                 key={video._id}
+//                 video={video}
+//                 isSelected={selected?._id === video._id}
+//                 onSelect={setSelected}
+//                 user={user}
+//                 onDelete={handleDelete}
+//               />
+//             ))}
+//           </div>
+//         </div>
+//       )}
+
+//       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add video">
+//         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+//           <div style={{ display: 'flex', background: 'var(--slate-100)', borderRadius: 10, padding: '0.25rem', gap: '0.25rem' }}>
+//             {[
+//               { key: 'youtube', label: 'YouTube link', icon: <Youtube size={14} style={{ color: '#ef4444' }} /> },
+//               { key: 'upload', label: 'Upload file', icon: <Upload size={14} style={{ color: 'var(--blue-500)' }} /> },
+//             ].map(({ key, label, icon }) => (
+//               <button
+//                 key={key}
+//                 type="button"
+//                 onClick={() => setAddType(key)}
+//                 style={{
+//                   flex: 1,
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   justifyContent: 'center',
+//                   gap: '0.375rem',
+//                   padding: '0.5rem',
+//                   borderRadius: 8,
+//                   border: 'none',
+//                   background: addType === key ? '#ffffff' : 'transparent',
+//                   color: addType === key ? 'var(--slate-900)' : 'var(--slate-500)',
+//                   fontSize: '0.8125rem',
+//                   fontWeight: addType === key ? 600 : 400,
+//                   cursor: 'pointer',
+//                   fontFamily: 'var(--font-body)',
+//                   boxShadow: addType === key ? 'var(--shadow-sm)' : 'none',
+//                   transition: 'all 150ms',
+//                 }}
+//               >
+//                 {icon} {label}
+//               </button>
+//             ))}
+//           </div>
+
+//           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+//             <div>
+//               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                 Internship
+//               </label>
+//               <select
+//                 value={form.internshipId}
+//                 onChange={(event) => setForm((current) => ({ ...current, internshipId: event.target.value }))}
+//                 className="input-field"
+//                 required
+//               >
+//                 <option value="">Select internship</option>
+//                 {internships.map((internship) => (
+//                   <option key={internship._id} value={internship._id}>
+//                     {internship.title}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+
+//             <div>
+//               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                 Title
+//               </label>
+//               <input
+//                 value={form.title}
+//                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+//                 className="input-field"
+//                 placeholder="Video title..."
+//                 required
+//               />
+//             </div>
+
+//             <div>
+//               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                 Description <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
+//               </label>
+//               <textarea
+//                 value={form.description}
+//                 onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+//                 className="input-field"
+//                 rows={2}
+//                 placeholder="Brief description..."
+//               />
+//             </div>
+
+//             {addType === 'youtube' ? (
+//               <>
+//                 <div>
+//                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                     YouTube URL
+//                   </label>
+//                   <input
+//                     value={form.url}
+//                     onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))}
+//                     className="input-field"
+//                     placeholder="https://youtube.com/watch?v=..."
+//                     required
+//                   />
+//                 </div>
+//                 <div>
+//                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                     Duration <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
+//                   </label>
+//                   <input
+//                     value={form.duration}
+//                     onChange={(event) => setForm((current) => ({ ...current, duration: event.target.value }))}
+//                     className="input-field"
+//                     placeholder="e.g. 12:34"
+//                   />
+//                 </div>
+//               </>
+//             ) : (
+//               <div>
+//                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
+//                   Video file <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(MP4, MOV · max 200MB)</span>
+//                 </label>
+//                 <input type="file" accept="video/*" onChange={(event) => setFileInput(event.target.files[0])} className="input-field" required />
+//               </div>
+//             )}
+
+//             <button type="submit" disabled={saving} className="btn-primary" style={{ justifyContent: 'center', padding: '0.625rem', marginTop: '0.125rem' }}>
+//               {saving ? <><RefreshCw size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Saving...</> : <><Plus size={15} /> Add video</>}
+//             </button>
+//           </form>
+//         </div>
+//       </Modal>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useVideoStore from '../store/videoStore';
@@ -17,6 +1127,8 @@ import {
   Youtube,
 } from 'lucide-react';
 
+// ─── URL helpers ──────────────────────────────────────────────────────────────
+
 const API_ORIGIN = (() => {
   try {
     return new URL(api.defaults.baseURL || '/api', window.location.origin).origin;
@@ -27,16 +1139,12 @@ const API_ORIGIN = (() => {
 
 function resolveMediaUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
-
   const trimmed = rawUrl.trim();
   if (!trimmed) return '';
-
   try {
     const resolved = new URL(trimmed, API_ORIGIN);
     const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(resolved.hostname);
-    if (resolved.protocol === 'http:' && !isLocalHost) {
-      resolved.protocol = 'https:';
-    }
+    if (resolved.protocol === 'http:' && !isLocalHost) resolved.protocol = 'https:';
     return resolved.toString();
   } catch {
     return trimmed;
@@ -46,7 +1154,6 @@ function resolveMediaUrl(rawUrl) {
 function extractYoutubeVideoId(url) {
   const normalized = resolveMediaUrl(url);
   if (!normalized) return '';
-
   try {
     const parsed = new URL(normalized);
     const host = parsed.hostname.replace(/^www\./, '');
@@ -55,25 +1162,19 @@ function extractYoutubeVideoId(url) {
       const id = parsed.pathname.split('/').filter(Boolean)[0] || '';
       return id.length === 11 ? id : '';
     }
-
     if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
       const fromQuery = parsed.searchParams.get('v') || '';
       if (fromQuery.length === 11) return fromQuery;
-
       const segments = parsed.pathname.split('/').filter(Boolean);
-      const markerIndex = segments.findIndex((segment) =>
-        ['embed', 'shorts', 'live'].includes(segment)
+      const markerIndex = segments.findIndex((s) =>
+        ['embed', 'shorts', 'live'].includes(s)
       );
-
       if (markerIndex !== -1) {
         const id = segments[markerIndex + 1] || '';
         return id.length === 11 ? id : '';
       }
     }
-  } catch {
-    // Fall back to regex parsing below.
-  }
-
+  } catch { /* fall through */ }
   const match = normalized.match(
     /(?:[?&]v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/
   );
@@ -85,9 +1186,7 @@ function isCloudinaryVideoUrl(url) {
   try {
     const parsed = new URL(url);
     return parsed.hostname.includes('res.cloudinary.com') && parsed.pathname.includes('/video/upload/');
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 function injectCloudinaryTransform(url, transformation) {
@@ -98,14 +1197,10 @@ function injectCloudinaryTransform(url, transformation) {
 function getFileExtension(url) {
   if (!url) return '';
   try {
-    const parsed = new URL(url);
-    const segment = parsed.pathname.split('/').filter(Boolean).pop() || '';
-    const ext = segment.split('.').pop() || '';
-    return ext.toLowerCase();
+    const seg = new URL(url).pathname.split('/').pop() || '';
+    return (seg.split('.').pop() || '').toLowerCase();
   } catch {
-    const segment = url.split('/').pop() || '';
-    const ext = segment.split('.').pop() || '';
-    return ext.toLowerCase();
+    return (url.split('/').pop()?.split('.').pop() || '').toLowerCase();
   }
 }
 
@@ -124,69 +1219,54 @@ function buildUploadSourceCandidates(url) {
   if (!url) return [];
   const resolved = resolveMediaUrl(url);
   if (!resolved) return [];
-
   if (!isCloudinaryVideoUrl(resolved)) {
     return [{ url: resolved, type: guessVideoMimeType(resolved) }];
   }
-
   const candidates = [
     { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_mp4,vc_auto'), type: 'video/mp4' },
     { url: injectCloudinaryTransform(resolved, 'q_auto:good,f_webm,vc_auto'), type: 'video/webm' },
     { url: resolved, type: guessVideoMimeType(resolved) },
   ];
-
   const seen = new Set();
-  return candidates.filter(({ url: candidateUrl }) => {
-    if (!candidateUrl || seen.has(candidateUrl)) return false;
-    seen.add(candidateUrl);
+  return candidates.filter(({ url: u }) => {
+    if (!u || seen.has(u)) return false;
+    seen.add(u);
     return true;
   });
 }
 
-function loadYoutubeApi() {
-  if (window.YT?.Player) {
-    return Promise.resolve(window.YT);
-  }
+// ─── YouTube IFrame API loader ────────────────────────────────────────────────
 
-  if (window.__internixYoutubeApiPromise) {
-    return window.__internixYoutubeApiPromise;
-  }
+function loadYoutubeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (window.__internixYoutubeApiPromise) return window.__internixYoutubeApiPromise;
 
   window.__internixYoutubeApiPromise = new Promise((resolve) => {
-    const previousReady = window.onYouTubeIframeAPIReady;
-
+    const prev = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
-      if (typeof previousReady === 'function') {
-        previousReady();
-      }
+      if (typeof prev === 'function') prev();
       resolve(window.YT);
     };
-
     if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
       const script = document.createElement('script');
       script.src = 'https://www.youtube.com/iframe_api';
       document.body.appendChild(script);
     }
-
-    if (window.YT?.Player) {
-      resolve(window.YT);
-    }
+    if (window.YT?.Player) resolve(window.YT);
   });
-
   return window.__internixYoutubeApiPromise;
 }
 
+// ─── VideoThumbnail ───────────────────────────────────────────────────────────
+
 function VideoThumbnail({ video }) {
   const thumbnailUrl = resolveMediaUrl(video.thumbnailUrl);
-
   return thumbnailUrl ? (
     <img
       src={thumbnailUrl}
       alt={video.title}
       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-      onError={(event) => {
-        event.currentTarget.style.display = 'none';
-      }}
+      onError={(e) => { e.currentTarget.style.display = 'none'; }}
     />
   ) : (
     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--slate-100)', color: 'var(--slate-300)' }}>
@@ -194,6 +1274,8 @@ function VideoThumbnail({ video }) {
     </div>
   );
 }
+
+// ─── VideoListItem ────────────────────────────────────────────────────────────
 
 function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
   const [hovered, setHovered] = useState(false);
@@ -206,37 +1288,17 @@ function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        gap: '0.75rem',
-        alignItems: 'flex-start',
-        padding: '0.75rem',
-        borderRadius: 'var(--radius-md)',
+        display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+        padding: '0.75rem', borderRadius: 'var(--radius-md)', position: 'relative',
         border: `1.5px solid ${isSelected ? 'var(--blue-400)' : hovered ? 'var(--slate-300)' : 'var(--slate-200)'}`,
         background: isSelected ? 'var(--blue-50)' : hovered ? 'var(--slate-50)' : '#ffffff',
-        cursor: 'pointer',
-        transition: 'all 180ms ease',
-        position: 'relative',
+        cursor: 'pointer', transition: 'all 180ms ease',
       }}
     >
-      <div style={{
-        width: 80,
-        height: 52,
-        borderRadius: 8,
-        overflow: 'hidden',
-        flexShrink: 0,
-        background: 'var(--slate-100)',
-        position: 'relative',
-      }}>
+      <div style={{ width: 80, height: 52, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--slate-100)', position: 'relative' }}>
         <VideoThumbnail video={video} />
         {isCompleted && (
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'rgba(16,185,129,0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(16,185,129,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={18} style={{ color: '#fff' }} />
           </div>
         )}
@@ -244,15 +1306,9 @@ function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: '0.8125rem',
-          fontWeight: 600,
+          fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.35, marginBottom: '0.25rem',
           color: isSelected ? 'var(--blue-700)' : 'var(--slate-900)',
-          lineHeight: 1.35,
-          marginBottom: '0.25rem',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>
           {video.title}
         </div>
@@ -274,10 +1330,7 @@ function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
 
       {isMentorAdmin && hovered && (
         <button
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(video._id);
-          }}
+          onClick={(e) => { e.stopPropagation(); onDelete(video._id); }}
           className="btn-icon danger"
           style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26 }}
         >
@@ -287,6 +1340,8 @@ function VideoListItem({ video, isSelected, onSelect, user, onDelete }) {
     </div>
   );
 }
+
+// ─── UploadTrackedPlayer ──────────────────────────────────────────────────────
 
 function UploadTrackedPlayer({ video, onSync }) {
   const videoRef = useRef(null);
@@ -300,29 +1355,22 @@ function UploadTrackedPlayer({ video, onSync }) {
   const activeSource = sourceCandidates[activeSourceIndex] || null;
   const mediaUrl = activeSource?.url || '';
 
+  // Reset source state and refs when video changes
   useEffect(() => {
     setActiveSourceIndex(0);
     setPlaybackFailed(false);
-  }, [video?._id]);
-
-  useEffect(() => {
     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
     skippedRef.current = Boolean(video?.progress?.skipped);
-  }, [video?._id, video?.progress?.lastPositionSeconds, video?.progress?.skipped]);
+  }, [video?._id]); // ← Only on video ID change, NOT on progress change
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+  useEffect(() => () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
   const syncProgress = async (isEnded = false) => {
     if (typeof onSync !== 'function') return;
     const player = videoRef.current;
     if (!player) return;
-
     await onSync(video._id, {
       currentTime: player.currentTime || 0,
       duration: Number.isFinite(player.duration) ? player.duration : 0,
@@ -334,58 +1382,38 @@ function UploadTrackedPlayer({ video, onSync }) {
   const startSyncing = () => {
     if (typeof onSync !== 'function') return;
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      void syncProgress(false);
-    }, 5000);
+    intervalRef.current = setInterval(() => { void syncProgress(false); }, 5000);
   };
 
   const stopSyncing = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
   };
 
   const handleTimeUpdate = () => {
     const player = videoRef.current;
     if (!player) return;
-
-    // Only mark as skipped if player is currently playing (not paused)
     if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed && !player.paused) {
       skippedRef.current = false;
     } else if (player.currentTime > lastTimeRef.current + 2.25 && !player.paused) {
       skippedRef.current = true;
     }
-
     lastTimeRef.current = player.currentTime;
   };
 
   const handleSeeking = () => {
     const player = videoRef.current;
     if (!player) return;
-
     if (player.currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed) {
       skippedRef.current = false;
       return;
     }
-
-    // Only mark skip if seeking forward more than 2 seconds
-    if (player.currentTime > lastTimeRef.current + 2.25) {
-      skippedRef.current = true;
-    }
-    
-    // Resume syncing if player is playing
-    if (!player.paused) {
-      startSyncing();
-    }
+    if (player.currentTime > lastTimeRef.current + 2.25) skippedRef.current = true;
+    if (!player.paused) startSyncing();
   };
 
   const handlePlaybackError = () => {
     const nextIndex = activeSourceIndex + 1;
-    if (nextIndex >= sourceCandidates.length) {
-      setPlaybackFailed(true);
-      return;
-    }
+    if (nextIndex >= sourceCandidates.length) { setPlaybackFailed(true); return; }
     stopSyncing();
     setActiveSourceIndex(nextIndex);
   };
@@ -395,17 +1423,8 @@ function UploadTrackedPlayer({ video, onSync }) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-            This video format is not supported by your browser.
-          </div>
-          <a
-            href={rawUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
-          >
-            Open video directly
-          </a>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>This video format is not supported by your browser.</div>
+          <a href={rawUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}>Open video directly</a>
         </div>
       </div>
     );
@@ -420,17 +1439,9 @@ function UploadTrackedPlayer({ video, onSync }) {
       controlsList="nodownload"
       preload="metadata"
       style={{ width: '100%', height: '100%', display: 'block' }}
-      onPlay={() => {
-        startSyncing();
-      }}
-      onPause={() => {
-        stopSyncing();
-        void syncProgress(false);
-      }}
-      onEnded={() => {
-        stopSyncing();
-        void syncProgress(true);
-      }}
+      onPlay={startSyncing}
+      onPause={() => { stopSyncing(); void syncProgress(false); }}
+      onEnded={() => { stopSyncing(); void syncProgress(true); }}
       onSeeking={handleSeeking}
       onTimeUpdate={handleTimeUpdate}
       onError={handlePlaybackError}
@@ -438,47 +1449,66 @@ function UploadTrackedPlayer({ video, onSync }) {
   );
 }
 
+// ─── YoutubeTrackedPlayer ─────────────────────────────────────────────────────
+// FIX 1: The player is created/destroyed ONLY when videoId changes.
+// FIX 2: Use 'https://www.youtube.com' as host so postMessage origin matches the
+//         stored embed URLs — youtube-nocookie.com has a different origin, causing
+//         the "target origin does not match" console errors + dropped messages.
+// FIX 3: Separate effects so ref resets (on video change) never trigger player rebuild.
+
 function YoutubeTrackedPlayer({ video, onSync }) {
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const pollRef = useRef(null);
+
   const videoUrl = resolveMediaUrl(video.url);
   const videoId = extractYoutubeVideoId(videoUrl);
+
+  // These refs hold live values and are read inside the YT player callbacks.
+  // They must NOT be in the useEffect dep array — that would cause rebuilds.
   const lastTimeRef = useRef(video?.progress?.lastPositionSeconds || 0);
   const skippedRef = useRef(Boolean(video?.progress?.skipped));
   const lastSyncAtRef = useRef(0);
   const onSyncRef = useRef(onSync);
+  const videoIdRef = useRef(videoId);
+  const videoProgressCompletedRef = useRef(Boolean(video?.progress?.completed));
+
   const [ytBlockedError, setYtBlockedError] = useState('');
 
-  useEffect(() => {
-    onSyncRef.current = onSync;
-  }, [onSync]);
+  // Keep refs in sync with latest props without triggering player rebuild
+  useEffect(() => { onSyncRef.current = onSync; }, [onSync]);
 
+  // Reset tracking refs when the user switches to a different video.
+  // This effect intentionally does NOT rebuild the player — it just resets state.
   useEffect(() => {
     lastTimeRef.current = video?.progress?.lastPositionSeconds || 0;
     skippedRef.current = Boolean(video?.progress?.skipped);
     lastSyncAtRef.current = 0;
+    videoProgressCompletedRef.current = Boolean(video?.progress?.completed);
     setYtBlockedError('');
-  }, [video?._id, video?.progress?.lastPositionSeconds, video?.progress?.skipped]);
+  }, [video?._id]); // ← video ID only — progress updates do NOT run this
 
+  // Keep completed ref fresh for skip-reset logic without rebuilding player
+  useEffect(() => {
+    videoProgressCompletedRef.current = Boolean(video?.progress?.completed);
+  }, [video?.progress?.completed]);
+
+  // ── Build/destroy the YT player — only when videoId changes ────────────────
+  // FIX: Removed `video?.progress?.completed` from deps. Previously every
+  //      progress sync that toggled `completed` would destroy & rebuild the player
+  //      mid-playback, causing the video to stop.
   useEffect(() => {
     let cancelled = false;
-    if (!videoId) {
-      return undefined;
-    }
+    if (!videoId) return undefined;
 
     const stopPolling = () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
 
     const syncFromPlayer = async (isEnded = false) => {
       if (typeof onSyncRef.current !== 'function') return;
       const player = playerRef.current;
       if (!player?.getCurrentTime || !player?.getDuration) return;
-
       await onSyncRef.current(video._id, {
         currentTime: player.getCurrentTime() || 0,
         duration: player.getDuration() || 0,
@@ -490,15 +1520,14 @@ function YoutubeTrackedPlayer({ video, onSync }) {
     const pollProgress = () => {
       const player = playerRef.current;
       if (!player?.getCurrentTime || !player?.getDuration) return;
-
       const currentTime = player.getCurrentTime() || 0;
 
-      if (currentTime < 2 && lastTimeRef.current > 10 && !video?.progress?.completed) {
+      // Skip detection — use ref for completed to avoid stale closure
+      if (currentTime < 2 && lastTimeRef.current > 10 && !videoProgressCompletedRef.current) {
         skippedRef.current = false;
       } else if (currentTime > lastTimeRef.current + 4) {
         skippedRef.current = true;
       }
-
       lastTimeRef.current = currentTime;
 
       if (Date.now() - lastSyncAtRef.current >= 5000) {
@@ -516,7 +1545,11 @@ function YoutubeTrackedPlayer({ video, onSync }) {
       if (cancelled || !hostRef.current) return;
 
       playerRef.current = new window.YT.Player(hostRef.current, {
-        host: 'https://www.youtube-nocookie.com',
+        // FIX: Use youtube.com, NOT youtube-nocookie.com.
+        // The stored URL is always https://www.youtube.com/embed/ID.
+        // Mixing hosts causes "postMessage target origin mismatch" warnings
+        // and breaks the JS API bridge, stalling/killing playback events.
+        host: 'https://www.youtube.com',
         videoId,
         width: '100%',
         height: '100%',
@@ -526,12 +1559,13 @@ function YoutubeTrackedPlayer({ video, onSync }) {
           rel: 0,
           modestbranding: 1,
           playsinline: 1,
+          // Prevent autoplay on player init
+          autoplay: 0,
         },
         events: {
           onError: (event) => {
-            // 2: invalid parameter, 100/101/150/153: unavailable or embedding blocked.
-            // 5 is often transient/noisy in browsers/extensions and should not hard-stop playback UI.
             const code = Number(event?.data);
+            // 5 = HTML5 error (often transient/ad-related), ignore it
             const blockedCodes = new Set([2, 100, 101, 150, 153]);
             if (blockedCodes.has(code)) {
               setYtBlockedError(`YouTube playback error (${code}). Open this video directly on YouTube.`);
@@ -539,18 +1573,14 @@ function YoutubeTrackedPlayer({ video, onSync }) {
           },
           onStateChange: (event) => {
             if (event.data === window.YT.PlayerState.PLAYING) {
-              if (typeof onSyncRef.current === 'function') {
-                startPolling();
-              }
+              startPolling();
               return;
             }
-
             if (event.data === window.YT.PlayerState.PAUSED) {
               stopPolling();
               void syncFromPlayer(false);
               return;
             }
-
             if (event.data === window.YT.PlayerState.ENDED) {
               stopPolling();
               void syncFromPlayer(true);
@@ -563,28 +1593,20 @@ function YoutubeTrackedPlayer({ video, onSync }) {
     return () => {
       cancelled = true;
       stopPolling();
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
-      }
+      if (playerRef.current?.destroy) playerRef.current.destroy();
       playerRef.current = null;
     };
-  }, [video?._id, video?.progress?.completed, videoId]);
+  // ↓ CRITICAL: Only videoId here. Do NOT add video?.progress?.completed.
+  //   Adding progress props causes the player to rebuild every time a sync
+  //   response arrives, destroying playback mid-video.
+  }, [videoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!videoId) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-            Could not play this YouTube link inside the app.
-          </div>
-          <a
-            href={videoUrl || video.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
-          >
-            Open on YouTube
-          </a>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>Could not play this YouTube link inside the app.</div>
+          <a href={videoUrl || video.url} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}>Open on YouTube</a>
         </div>
       </div>
     );
@@ -594,17 +1616,8 @@ function YoutubeTrackedPlayer({ video, onSync }) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', color: '#fff', textAlign: 'center' }}>
         <div>
-          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-            {ytBlockedError}
-          </div>
-          <a
-            href={videoUrl || video.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}
-          >
-            Open on YouTube
-          </a>
+          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>{ytBlockedError}</div>
+          <a href={videoUrl || video.url} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', fontSize: '0.8125rem', textDecoration: 'underline' }}>Open on YouTube</a>
         </div>
       </div>
     );
@@ -613,6 +1626,8 @@ function YoutubeTrackedPlayer({ video, onSync }) {
   return <div ref={hostRef} style={{ width: '100%', height: '100%' }} />;
 }
 
+// ─── VideoPlayerPanel ─────────────────────────────────────────────────────────
+
 function VideoPlayerPanel({ video, user, onSync }) {
   const isCompleted = video?.progress?.completed;
   const isSkipped = video?.progress?.skipped;
@@ -620,14 +1635,7 @@ function VideoPlayerPanel({ video, user, onSync }) {
 
   return (
     <div>
-      <div style={{
-        borderRadius: 'var(--radius-lg)',
-        overflow: 'hidden',
-        background: '#000',
-        aspectRatio: '16/9',
-        marginBottom: '1rem',
-        boxShadow: 'var(--shadow-lg)',
-      }}>
+      <div style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: '#000', aspectRatio: '16/9', marginBottom: '1rem', boxShadow: 'var(--shadow-lg)' }}>
         {video.type === 'youtube' ? (
           <YoutubeTrackedPlayer video={video} onSync={canTrackProgress ? onSync : null} />
         ) : (
@@ -658,21 +1666,16 @@ function VideoPlayerPanel({ video, user, onSync }) {
 
           {user?.role === 'student' && (
             <div style={{
-              display: 'flex',
-              gap: '0.625rem',
-              alignItems: 'flex-start',
-              padding: '0.875rem 1rem',
-              borderRadius: 'var(--radius-md)',
+              display: 'flex', gap: '0.625rem', alignItems: 'flex-start',
+              padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)',
               border: `1px solid ${isCompleted ? 'rgba(16,185,129,0.2)' : isSkipped ? 'rgba(245,158,11,0.25)' : 'var(--slate-200)'}`,
               background: isCompleted ? 'var(--emerald-50)' : isSkipped ? 'rgba(245,158,11,0.08)' : 'var(--slate-50)',
             }}>
-              {isCompleted ? (
-                <CheckCircle size={18} style={{ color: 'var(--emerald-600)', flexShrink: 0, marginTop: 1 }} />
-              ) : isSkipped ? (
-                <AlertTriangle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
-              ) : (
-                <Play size={18} style={{ color: 'var(--blue-500)', flexShrink: 0, marginTop: 1 }} />
-              )}
+              {isCompleted
+                ? <CheckCircle size={18} style={{ color: 'var(--emerald-600)', flexShrink: 0, marginTop: 1 }} />
+                : isSkipped
+                  ? <AlertTriangle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+                  : <Play size={18} style={{ color: 'var(--blue-500)', flexShrink: 0, marginTop: 1 }} />}
               <div>
                 <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--slate-800)', marginBottom: '0.1875rem' }}>
                   {isCompleted ? 'Completed automatically' : isSkipped ? 'Skipping detected' : 'Completion happens automatically'}
@@ -693,9 +1696,12 @@ function VideoPlayerPanel({ video, user, onSync }) {
   );
 }
 
+// ─── VideosPage ───────────────────────────────────────────────────────────────
+
 export default function VideosPage() {
   const user = useAuthStore((state) => state.user);
   const { videos, loading, fetchVideos, createVideoLink, uploadVideo, deleteVideo, syncVideoProgress } = useVideoStore();
+
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState('youtube');
@@ -705,86 +1711,80 @@ export default function VideosPage() {
   const [internships, setInternships] = useState([]);
   const [selectedInternship, setSelectedInternship] = useState('');
   const [loadingInternships, setLoadingInternships] = useState(false);
+
   const isMentorAdmin = user?.role === 'mentor' || user?.role === 'admin';
 
+  // ── Load internships for mentor/admin ───────────────────────────────────────
   useEffect(() => {
     if (!isMentorAdmin) {
       fetchVideos();
       return;
     }
-
     let active = true;
     setLoadingInternships(true);
-
     api.get('/internships')
       .then(({ data }) => {
         if (!active) return;
-        const nextInternships = data.internships || [];
-        setInternships(nextInternships);
-        setSelectedInternship((current) => current || nextInternships[0]?._id || '');
+        const list = data.internships || [];
+        setInternships(list);
+        setSelectedInternship((cur) => cur || list[0]?._id || '');
       })
-      .catch(() => {
-        if (!active) return;
-        toast.error('Failed to load internships');
-      })
-      .finally(() => {
-        if (active) setLoadingInternships(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      .catch(() => { if (active) toast.error('Failed to load internships'); })
+      .finally(() => { if (active) setLoadingInternships(false); });
+    return () => { active = false; };
   }, [fetchVideos, isMentorAdmin]);
 
   useEffect(() => {
-    if (isMentorAdmin) {
-      fetchVideos(selectedInternship ? { internshipId: selectedInternship } : {});
-    }
+    if (isMentorAdmin) fetchVideos(selectedInternship ? { internshipId: selectedInternship } : {});
   }, [fetchVideos, isMentorAdmin, selectedInternship]);
 
+  // ── Sync selected video from store — but only switch video, don't jitter ───
+  // FIX: Previously this ran on every store update (including progress syncs),
+  //      creating a new `selected` object reference on every 5-second ping.
+  //      Now we only auto-switch when the video list itself changes (new video
+  //      added / deleted). Progress updates inside existing videos are handled
+  //      by handleSyncProgress updating `selected` directly.
+  const prevVideoIdsRef = useRef('');
   useEffect(() => {
-    setSelected((current) => {
+    const ids = videos.map((v) => v._id).join(',');
+    if (ids === prevVideoIdsRef.current) return; // list unchanged, skip
+    prevVideoIdsRef.current = ids;
+
+    setSelected((cur) => {
       if (videos.length === 0) return null;
-      return videos.find((video) => video._id === current?._id) || videos[0];
+      // Keep current selection if it's still in the list
+      const still = cur ? videos.find((v) => v._id === cur._id) : null;
+      return still || videos[0];
     });
   }, [videos]);
 
   useEffect(() => {
     if (!showAdd) return;
-    setForm((current) => ({
-      ...current,
-      internshipId: current.internshipId || selectedInternship || internships[0]?._id || '',
+    setForm((cur) => ({
+      ...cur,
+      internshipId: cur.internshipId || selectedInternship || internships[0]?._id || '',
     }));
   }, [internships, selectedInternship, showAdd]);
 
-  const completedCount = videos.filter((video) => video.progress?.completed).length;
+  const completedCount = videos.filter((v) => v.progress?.completed).length;
   const progressPct = videos.length > 0 ? Math.round((completedCount / videos.length) * 100) : 0;
-  const activeInternship = internships.find((internship) => internship._id === selectedInternship);
+  const activeInternship = internships.find((i) => i._id === selectedInternship);
 
   const refreshVideos = async () => {
     await fetchVideos(isMentorAdmin ? (selectedInternship ? { internshipId: selectedInternship } : {}) : {});
   };
 
+  // ── Add video ───────────────────────────────────────────────────────────────
   const handleSave = async (event) => {
     event.preventDefault();
-
-    if (isMentorAdmin && !form.internshipId) {
-      toast.error('Select an internship for this video');
-      return;
-    }
-
+    if (isMentorAdmin && !form.internshipId) { toast.error('Select an internship for this video'); return; }
     setSaving(true);
     try {
       if (addType === 'youtube') {
         await createVideoLink(form);
         toast.success('Video added');
       } else {
-        if (!fileInput) {
-          toast.error('Select a file');
-          setSaving(false);
-          return;
-        }
-
+        if (!fileInput) { toast.error('Select a file'); setSaving(false); return; }
         const uploadData = new FormData();
         uploadData.append('title', form.title);
         uploadData.append('description', form.description);
@@ -793,7 +1793,6 @@ export default function VideosPage() {
         await uploadVideo(uploadData);
         toast.success('Video uploaded');
       }
-
       await refreshVideos();
       setShowAdd(false);
       setForm({ title: '', description: '', url: '', duration: '', internshipId: selectedInternship || internships[0]?._id || '' });
@@ -805,6 +1804,7 @@ export default function VideosPage() {
     }
   };
 
+  // ── Delete video ────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     if (!confirm('Delete this video?')) return;
     try {
@@ -816,27 +1816,37 @@ export default function VideosPage() {
     }
   };
 
+  // ── Sync progress ───────────────────────────────────────────────────────────
+  // FIX: No longer calls setSelected here. The store update (syncVideoProgress)
+  //      updates the `videos` array, but the `prevVideoIdsRef` guard above means
+  //      that progress-only updates do NOT trigger a selected re-assignment, so
+  //      the player is never remounted on a sync call.
+  //      We DO update `selected` locally so the status badge (completed/skipped)
+  //      refreshes immediately without waiting for the store.
   const handleSyncProgress = async (videoId, payload) => {
     try {
-      const previousProgress = videos.find((video) => video._id === videoId)?.progress;
+      const previousProgress = videos.find((v) => v._id === videoId)?.progress;
       const { progress } = await syncVideoProgress(videoId, payload);
 
-      if (!previousProgress?.completed && progress?.completed) {
-        toast.success('Video completed automatically');
-      } else if (!previousProgress?.skipped && progress?.skipped) {
-        toast.error('Skipping detected. Restart the video and watch it fully.');
-      }
+      // Update the selected object's progress in-place so the badge reflects
+      // the new state. This does NOT cause the player to remount because
+      // YoutubeTrackedPlayer only re-creates on videoId change, and
+      // UploadTrackedPlayer only resets on video._id change.
+      setSelected((cur) =>
+        cur?._id === videoId ? { ...cur, progress } : cur
+      );
 
-      setSelected((current) => (
-        current?._id === videoId
-          ? { ...current, progress }
-          : current
-      ));
+      if (!previousProgress?.completed && progress?.completed) {
+        toast.success('🎉 Video completed automatically!');
+      } else if (!previousProgress?.skipped && progress?.skipped) {
+        toast.error('Skipping detected — restart from the beginning to complete this video.');
+      }
     } catch {
-      // Ignore noisy sync errors while the student watches the video.
+      // Silently ignore sync errors during playback
     }
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   if (loading || loadingInternships) return <LoadingSpinner label="Loading videos..." />;
 
   if (user?.role === 'student' && !user?.internship) {
@@ -845,27 +1855,22 @@ export default function VideosPage() {
         <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
           <BookOpen size={28} style={{ color: 'var(--slate-300)' }} />
         </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-          No internship assigned yet
-        </div>
-        <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
-          Ask your admin or mentor to assign you to an internship so the right videos can appear here.
-        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>No internship assigned yet</div>
+        <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>Ask your admin or mentor to assign you to an internship so the right videos can appear here.</div>
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Header */}
       <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ width: 40, height: 40, borderRadius: 11, background: 'var(--rose-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(244,63,94,0.15)' }}>
             <BookOpen size={19} style={{ color: 'var(--rose-500)' }} />
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>
-              Learning Videos
-            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--slate-900)', letterSpacing: '-0.03em' }}>Learning Videos</div>
             <div style={{ fontSize: '0.8125rem', color: 'var(--slate-500)' }}>
               {user?.role === 'student'
                 ? `${user?.internship?.title || 'My internship'} · ${videos.length} videos · ${completedCount} completed`
@@ -873,39 +1878,23 @@ export default function VideosPage() {
             </div>
           </div>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {isMentorAdmin && (
-            <select
-              value={selectedInternship}
-              onChange={(event) => setSelectedInternship(event.target.value)}
-              className="input-field"
-              style={{ minWidth: 220 }}
-            >
-              {internships.length === 0 ? (
-                <option value="">No internships found</option>
-              ) : (
-                internships.map((internship) => (
-                  <option key={internship._id} value={internship._id}>
-                    {internship.title}
-                  </option>
-                ))
-              )}
+            <select value={selectedInternship} onChange={(e) => setSelectedInternship(e.target.value)} className="input-field" style={{ minWidth: 220 }}>
+              {internships.length === 0
+                ? <option value="">No internships found</option>
+                : internships.map((i) => <option key={i._id} value={i._id}>{i.title}</option>)}
             </select>
           )}
-
           {isMentorAdmin && (
-            <button
-              onClick={() => setShowAdd(true)}
-              className="btn-primary"
-              disabled={internships.length === 0}
-            >
+            <button onClick={() => setShowAdd(true)} className="btn-primary" disabled={internships.length === 0}>
               <Plus size={15} /> Add Video
             </button>
           )}
         </div>
       </div>
 
+      {/* Progress bar */}
       {user?.role === 'student' && videos.length > 0 && (
         <div className="card animate-fade-up stagger-1" style={{ padding: '1rem 1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -921,33 +1910,27 @@ export default function VideosPage() {
         </div>
       )}
 
+      {/* Empty states */}
       {isMentorAdmin && internships.length === 0 ? (
         <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
             <BookOpen size={28} style={{ color: 'var(--slate-300)' }} />
           </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-            Create an internship first
-          </div>
-          <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
-            Videos are now managed inside internships, so create or assign an internship before adding learning content.
-          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Create an internship first</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>Videos are managed inside internships — create or assign one before adding learning content.</div>
         </div>
       ) : videos.length === 0 ? (
         <div className="card animate-fade-up stagger-2" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, background: 'var(--slate-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
             <Play size={28} style={{ color: 'var(--slate-300)' }} />
           </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-600)', marginBottom: '0.375rem' }}>
-            No videos yet
-          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1rem', color: 'var(--slate-600)', marginBottom: '0.375rem' }}>No videos yet</div>
           <div style={{ fontSize: '0.875rem', color: 'var(--slate-400)' }}>
-            {isMentorAdmin
-              ? `Add videos for ${activeInternship?.title || 'this internship'}.`
-              : 'Your mentor will add internship videos here.'}
+            {isMentorAdmin ? `Add videos for ${activeInternship?.title || 'this internship'}.` : 'Your mentor will add internship videos here.'}
           </div>
         </div>
       ) : (
+        /* Player + playlist */
         <div className="animate-fade-up stagger-2 responsive-grid-sidebar">
           <div className="card" style={{ padding: '1.25rem', minWidth: 0, width: '100%' }}>
             {selected ? (
@@ -977,32 +1960,25 @@ export default function VideosPage() {
         </div>
       )}
 
+      {/* Add video modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add video">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', background: 'var(--slate-100)', borderRadius: 10, padding: '0.25rem', gap: '0.25rem' }}>
             {[
               { key: 'youtube', label: 'YouTube link', icon: <Youtube size={14} style={{ color: '#ef4444' }} /> },
-              { key: 'upload', label: 'Upload file', icon: <Upload size={14} style={{ color: 'var(--blue-500)' }} /> },
+              { key: 'upload',  label: 'Upload file',  icon: <Upload  size={14} style={{ color: 'var(--blue-500)' }} /> },
             ].map(({ key, label, icon }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setAddType(key)}
                 style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.375rem',
-                  padding: '0.5rem',
-                  borderRadius: 8,
-                  border: 'none',
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '0.375rem', padding: '0.5rem', borderRadius: 8, border: 'none',
                   background: addType === key ? '#ffffff' : 'transparent',
                   color: addType === key ? 'var(--slate-900)' : 'var(--slate-500)',
-                  fontSize: '0.8125rem',
-                  fontWeight: addType === key ? 600 : 400,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.8125rem', fontWeight: addType === key ? 600 : 400,
+                  cursor: 'pointer', fontFamily: 'var(--font-body)',
                   boxShadow: addType === key ? 'var(--shadow-sm)' : 'none',
                   transition: 'all 150ms',
                 }}
@@ -1014,87 +1990,45 @@ export default function VideosPage() {
 
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                Internship
-              </label>
-              <select
-                value={form.internshipId}
-                onChange={(event) => setForm((current) => ({ ...current, internshipId: event.target.value }))}
-                className="input-field"
-                required
-              >
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Internship</label>
+              <select value={form.internshipId} onChange={(e) => setForm((cur) => ({ ...cur, internshipId: e.target.value }))} className="input-field" required>
                 <option value="">Select internship</option>
-                {internships.map((internship) => (
-                  <option key={internship._id} value={internship._id}>
-                    {internship.title}
-                  </option>
-                ))}
+                {internships.map((i) => <option key={i._id} value={i._id}>{i.title}</option>)}
               </select>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                Title
-              </label>
-              <input
-                value={form.title}
-                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                className="input-field"
-                placeholder="Video title..."
-                required
-              />
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Title</label>
+              <input value={form.title} onChange={(e) => setForm((cur) => ({ ...cur, title: e.target.value }))} className="input-field" placeholder="Video title..." required />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                Description <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                className="input-field"
-                rows={2}
-                placeholder="Brief description..."
-              />
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Description <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span></label>
+              <textarea value={form.description} onChange={(e) => setForm((cur) => ({ ...cur, description: e.target.value }))} className="input-field" rows={2} placeholder="Brief description..." />
             </div>
 
             {addType === 'youtube' ? (
               <>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                    YouTube URL
-                  </label>
-                  <input
-                    value={form.url}
-                    onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))}
-                    className="input-field"
-                    placeholder="https://youtube.com/watch?v=..."
-                    required
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>YouTube URL</label>
+                  <input value={form.url} onChange={(e) => setForm((cur) => ({ ...cur, url: e.target.value }))} className="input-field" placeholder="https://youtube.com/watch?v=..." required />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                    Duration <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span>
-                  </label>
-                  <input
-                    value={form.duration}
-                    onChange={(event) => setForm((current) => ({ ...current, duration: event.target.value }))}
-                    className="input-field"
-                    placeholder="e.g. 12:34"
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Duration <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(optional)</span></label>
+                  <input value={form.duration} onChange={(e) => setForm((cur) => ({ ...cur, duration: e.target.value }))} className="input-field" placeholder="e.g. 12:34" />
                 </div>
               </>
             ) : (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>
-                  Video file <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(MP4, MOV · max 200MB)</span>
-                </label>
-                <input type="file" accept="video/*" onChange={(event) => setFileInput(event.target.files[0])} className="input-field" required />
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--slate-700)', marginBottom: '0.375rem' }}>Video file <span style={{ color: 'var(--slate-400)', fontWeight: 400 }}>(MP4, MOV · max 200MB)</span></label>
+                <input type="file" accept="video/*" onChange={(e) => setFileInput(e.target.files[0])} className="input-field" required />
               </div>
             )}
 
             <button type="submit" disabled={saving} className="btn-primary" style={{ justifyContent: 'center', padding: '0.625rem', marginTop: '0.125rem' }}>
-              {saving ? <><RefreshCw size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Saving...</> : <><Plus size={15} /> Add video</>}
+              {saving
+                ? <><RefreshCw size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Saving...</>
+                : <><Plus size={15} /> Add video</>}
             </button>
           </form>
         </div>
